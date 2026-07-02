@@ -176,31 +176,39 @@ function PostServicePage() {
               {step === 2 && (
                 <div className="space-y-4">
                   <h3 className="text-lg font-bold">Gallery & Portfolio</h3>
-                  <div className="rounded-xl border-2 border-dashed border-border p-10 text-center">
-                    <p className="text-sm text-muted-foreground">Upload up to <b>4 images</b> of your work</p>
-                    <p className="mt-1 text-xs text-muted-foreground">JPG, PNG or GIF, max 2MB each</p>
-                    <input type="file" multiple accept="image/*" className="mt-4 text-xs" />
-                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Add up to 4 photos of your previous work. Great photos double your conversion rate.
+                  </p>
+                  <ImageUploader value={images} onChange={setImages} max={4} />
                 </div>
               )}
               {step === 3 && (
                 <div className="space-y-3">
                   <h3 className="text-lg font-bold">Review & Publish</h3>
                   <div className="rounded-xl border border-border p-4 text-sm">
-                    <p><b>{form.title || "—"}</b> • {form.category || "—"}</p>
-                    <p className="text-muted-foreground">{form.city}</p>
+                    <p><b>{form.title || "—"}</b> • {form.category || "—"}{form.subCategory ? ` · ${form.subCategory}` : ""}</p>
+                    <p className="text-muted-foreground">{form.city}{form.workingDays ? ` · ${form.workingDays}` : ""}{form.from && form.to ? ` · ${form.from}–${form.to}` : ""}</p>
                     <p className="mt-2 text-[var(--brand-orange)] font-semibold">PKR {form.rate || "—"} / {form.rateType}</p>
                     <p className="mt-2 whitespace-pre-wrap text-sm text-muted-foreground">{form.detailedDesc}</p>
+                    {images.length > 0 && (
+                      <div className="mt-3 grid grid-cols-4 gap-2">
+                        {images.map((f, i) => (
+                          <img key={i} src={URL.createObjectURL(f)} alt="" className="aspect-square rounded-md object-cover" />
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
 
               <div className="mt-6 flex items-center justify-between border-t border-border pt-5">
-                <Button variant="outline" disabled={step === 0} onClick={() => setStep((s) => Math.max(0, s - 1))}>Back</Button>
+                <Button variant="outline" disabled={step === 0 || busy} onClick={() => setStep((s) => Math.max(0, s - 1))}>Back</Button>
                 {step < STEPS.length - 1 ? (
-                  <Button onClick={() => setStep((s) => s + 1)} className="bg-[var(--brand-orange)] hover:bg-[var(--brand-orange-dark)] text-white">Save & Next</Button>
+                  <Button onClick={next} className="bg-[var(--brand-orange)] hover:bg-[var(--brand-orange-dark)] text-white">Save & Next</Button>
                 ) : (
-                  <Button onClick={submit} className="bg-[var(--brand-orange)] hover:bg-[var(--brand-orange-dark)] text-white">Publish Service</Button>
+                  <Button onClick={submit} disabled={busy} className="bg-[var(--brand-orange)] hover:bg-[var(--brand-orange-dark)] text-white">
+                    {busy ? "Publishing…" : "Publish Service"}
+                  </Button>
                 )}
               </div>
             </div>
@@ -226,6 +234,7 @@ function PostServicePage() {
         </div>
       </section>
       <Footer />
+      <UploadingOverlay active={busy} label="Publishing your service…" />
       <style>{`.input{width:100%;border:1px solid var(--color-input);background:white;border-radius:var(--radius-md);padding:0.65rem 0.75rem;font-size:0.875rem;outline:none}.input:focus{border-color:var(--brand-orange);box-shadow:0 0 0 3px oklch(0.7 0.19 47 / 0.15)}`}</style>
     </div>
   );
