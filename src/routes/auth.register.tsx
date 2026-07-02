@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { toast } from "sonner";
+import { friendlyAuthError } from "@/lib/auth-errors";
 import { Briefcase, Search, Wrench, User as UserIcon, CheckCircle2 } from "lucide-react";
 import type { AccountType } from "@/services/types";
 import { PK_CITIES } from "@/services/mock";
