@@ -78,18 +78,22 @@ function PostServicePage() {
     setBusy(true);
     try {
       const uploaded = images.length ? await uploadsService.uploadMany(images) : [];
-      await providersService.create({
+      const payload: Record<string, unknown> = {
         name: form.title, category: form.category, city: form.city,
         description: form.detailedDesc,
         tags: form.tags.split(",").map((t) => t.trim()).filter(Boolean),
         hourlyRate: Number(form.rate) || undefined, currency: "PKR",
         avatarUrl: uploaded[0]?.url,
-        // additional fields sent as-is; backend can ignore unknown keys
-        ...({ images: uploaded.map((u) => u.url), subCategory: form.subCategory,
-              shortDescription: form.shortDesc, rateType: form.rateType,
-              workingDays: form.workingDays, hoursFrom: form.from, hoursTo: form.to,
-              travelToCustomer: form.travelToCustomer } as never),
-      });
+        images: uploaded.map((u) => u.url),
+        subCategory: form.subCategory,
+        shortDescription: form.shortDesc,
+        rateType: form.rateType,
+        workingDays: form.workingDays,
+        hoursFrom: form.from,
+        hoursTo: form.to,
+        travelToCustomer: form.travelToCustomer,
+      };
+      await providersService.create(payload as never);
       toast.success("Service posted successfully");
       navigate({ to: "/dashboard" });
     } catch {
