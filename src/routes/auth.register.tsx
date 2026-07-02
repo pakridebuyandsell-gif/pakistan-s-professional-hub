@@ -42,7 +42,9 @@ function RegisterPage() {
     if (!accountType) return;
     setBusy(true);
     try {
-      await signUpEmail(form.email, form.password, form.fullName, accountType);
+      await signUpEmail(form.email, form.password, form.fullName, accountType, {
+        whatsapp: form.whatsapp, city: form.city,
+      });
       toast.success("Account created!");
       nav({ to: "/dashboard" });
     } catch (err) {
