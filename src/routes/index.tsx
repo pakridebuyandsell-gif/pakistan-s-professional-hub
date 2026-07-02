@@ -1,11 +1,16 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
-import { MOCK_JOBS, MOCK_PROVIDERS, JOB_CATEGORIES, SERVICE_CATEGORIES } from "@/services/mock";
+import { JOB_CATEGORIES, SERVICE_CATEGORIES, PK_CITIES } from "@/services/mock";
+import { jobsService } from "@/services/jobs.service";
+import { providersService } from "@/services/providers.service";
+import { useQuery } from "@tanstack/react-query";
+import { useGeolocation } from "@/hooks/useGeolocation";
+import { toast } from "sonner";
 import {
   Search, Briefcase, Wrench, Megaphone, MapPin, ArrowRight, ShieldCheck, Users, Globe,
-  Headphones, Star, CheckCircle2, ChevronRight,
+  Headphones, Star, CheckCircle2, ChevronRight, LocateFixed, Loader2,
 } from "lucide-react";
 import { useState } from "react";
 
