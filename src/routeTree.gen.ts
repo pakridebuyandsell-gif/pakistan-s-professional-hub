@@ -9,10 +9,22 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as PostServiceRouteImport } from './routes/post-service'
+import { Route as PostJobRouteImport } from './routes/post-job'
 import { Route as FindServicesRouteImport } from './routes/find-services'
 import { Route as FindJobsRouteImport } from './routes/find-jobs'
 import { Route as IndexRouteImport } from './routes/index'
 
+const PostServiceRoute = PostServiceRouteImport.update({
+  id: '/post-service',
+  path: '/post-service',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PostJobRoute = PostJobRouteImport.update({
+  id: '/post-job',
+  path: '/post-job',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const FindServicesRoute = FindServicesRouteImport.update({
   id: '/find-services',
   path: '/find-services',
@@ -33,34 +45,67 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/find-jobs': typeof FindJobsRoute
   '/find-services': typeof FindServicesRoute
+  '/post-job': typeof PostJobRoute
+  '/post-service': typeof PostServiceRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/find-jobs': typeof FindJobsRoute
   '/find-services': typeof FindServicesRoute
+  '/post-job': typeof PostJobRoute
+  '/post-service': typeof PostServiceRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/find-jobs': typeof FindJobsRoute
   '/find-services': typeof FindServicesRoute
+  '/post-job': typeof PostJobRoute
+  '/post-service': typeof PostServiceRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/find-jobs' | '/find-services'
+  fullPaths:
+    | '/'
+    | '/find-jobs'
+    | '/find-services'
+    | '/post-job'
+    | '/post-service'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/find-jobs' | '/find-services'
-  id: '__root__' | '/' | '/find-jobs' | '/find-services'
+  to: '/' | '/find-jobs' | '/find-services' | '/post-job' | '/post-service'
+  id:
+    | '__root__'
+    | '/'
+    | '/find-jobs'
+    | '/find-services'
+    | '/post-job'
+    | '/post-service'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   FindJobsRoute: typeof FindJobsRoute
   FindServicesRoute: typeof FindServicesRoute
+  PostJobRoute: typeof PostJobRoute
+  PostServiceRoute: typeof PostServiceRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/post-service': {
+      id: '/post-service'
+      path: '/post-service'
+      fullPath: '/post-service'
+      preLoaderRoute: typeof PostServiceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/post-job': {
+      id: '/post-job'
+      path: '/post-job'
+      fullPath: '/post-job'
+      preLoaderRoute: typeof PostJobRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/find-services': {
       id: '/find-services'
       path: '/find-services'
@@ -89,6 +134,8 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   FindJobsRoute: FindJobsRoute,
   FindServicesRoute: FindServicesRoute,
+  PostJobRoute: PostJobRoute,
+  PostServiceRoute: PostServiceRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
