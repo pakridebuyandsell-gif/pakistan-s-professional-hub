@@ -43,13 +43,19 @@ const ur = {
 };
 
 if (!i18n.isInitialized) {
-  i18n.use(LanguageDetector).use(initReactI18next).init({
-    resources: { en: { translation: en }, ur: { translation: ur } },
-    fallbackLng: "en",
-    lng: "en",
-    interpolation: { escapeValue: false },
-    detection: { order: ["localStorage", "navigator"], caches: ["localStorage"] },
-  });
+  i18n
+    .use(LanguageDetector)
+    .use(initReactI18next)
+    .init({
+      resources: { en: { translation: en }, ur: { translation: ur } },
+      fallbackLng: "en",
+      lng: "en",
+      supportedLngs: ["en", "ur"],
+      react: { useSuspense: false },
+      initImmediate: false,
+      interpolation: { escapeValue: false },
+      detection: { order: ["localStorage", "navigator"], caches: ["localStorage"] },
+    });
 }
 
 export default i18n;
