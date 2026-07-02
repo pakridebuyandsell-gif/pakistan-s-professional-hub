@@ -18,6 +18,7 @@ import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthRegisterRouteImport } from './routes/auth.register'
 import { Route as AuthLoginRouteImport } from './routes/auth.login'
+import { Route as AuthForgotPasswordRouteImport } from './routes/auth.forgot-password'
 import { Route as ApiPublicFirebaseConfigRouteImport } from './routes/api/public/firebase-config'
 
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
@@ -65,6 +66,11 @@ const AuthLoginRoute = AuthLoginRouteImport.update({
   path: '/auth/login',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthForgotPasswordRoute = AuthForgotPasswordRouteImport.update({
+  id: '/auth/forgot-password',
+  path: '/auth/forgot-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicFirebaseConfigRoute = ApiPublicFirebaseConfigRouteImport.update({
   id: '/api/public/firebase-config',
   path: '/api/public/firebase-config',
@@ -79,6 +85,7 @@ export interface FileRoutesByFullPath {
   '/post-job': typeof PostJobRoute
   '/post-service': typeof PostServiceRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/auth/forgot-password': typeof AuthForgotPasswordRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/register': typeof AuthRegisterRoute
   '/api/public/firebase-config': typeof ApiPublicFirebaseConfigRoute
@@ -91,6 +98,7 @@ export interface FileRoutesByTo {
   '/post-job': typeof PostJobRoute
   '/post-service': typeof PostServiceRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/auth/forgot-password': typeof AuthForgotPasswordRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/register': typeof AuthRegisterRoute
   '/api/public/firebase-config': typeof ApiPublicFirebaseConfigRoute
@@ -104,6 +112,7 @@ export interface FileRoutesById {
   '/post-job': typeof PostJobRoute
   '/post-service': typeof PostServiceRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/auth/forgot-password': typeof AuthForgotPasswordRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/register': typeof AuthRegisterRoute
   '/api/public/firebase-config': typeof ApiPublicFirebaseConfigRoute
@@ -118,6 +127,7 @@ export interface FileRouteTypes {
     | '/post-job'
     | '/post-service'
     | '/sitemap.xml'
+    | '/auth/forgot-password'
     | '/auth/login'
     | '/auth/register'
     | '/api/public/firebase-config'
@@ -130,6 +140,7 @@ export interface FileRouteTypes {
     | '/post-job'
     | '/post-service'
     | '/sitemap.xml'
+    | '/auth/forgot-password'
     | '/auth/login'
     | '/auth/register'
     | '/api/public/firebase-config'
@@ -142,6 +153,7 @@ export interface FileRouteTypes {
     | '/post-job'
     | '/post-service'
     | '/sitemap.xml'
+    | '/auth/forgot-password'
     | '/auth/login'
     | '/auth/register'
     | '/api/public/firebase-config'
@@ -155,6 +167,7 @@ export interface RootRouteChildren {
   PostJobRoute: typeof PostJobRoute
   PostServiceRoute: typeof PostServiceRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
+  AuthForgotPasswordRoute: typeof AuthForgotPasswordRoute
   AuthLoginRoute: typeof AuthLoginRoute
   AuthRegisterRoute: typeof AuthRegisterRoute
   ApiPublicFirebaseConfigRoute: typeof ApiPublicFirebaseConfigRoute
@@ -225,6 +238,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthLoginRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/auth/forgot-password': {
+      id: '/auth/forgot-password'
+      path: '/auth/forgot-password'
+      fullPath: '/auth/forgot-password'
+      preLoaderRoute: typeof AuthForgotPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/firebase-config': {
       id: '/api/public/firebase-config'
       path: '/api/public/firebase-config'
@@ -243,6 +263,7 @@ const rootRouteChildren: RootRouteChildren = {
   PostJobRoute: PostJobRoute,
   PostServiceRoute: PostServiceRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
+  AuthForgotPasswordRoute: AuthForgotPasswordRoute,
   AuthLoginRoute: AuthLoginRoute,
   AuthRegisterRoute: AuthRegisterRoute,
   ApiPublicFirebaseConfigRoute: ApiPublicFirebaseConfigRoute,
