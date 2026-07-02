@@ -16,8 +16,8 @@ interface State {
 
 async function reverseGeocode(lat: number, lng: number): Promise<Partial<GeoResult>> {
   try {
-    const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=10&addressdetails=1`;
-    const res = await fetch(url, { headers: { Accept: "application/json" } });
+    const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=10&addressdetails=1&accept-language=en`;
+    const res = await fetch(url, { headers: { Accept: "application/json", "Accept-Language": "en" } });
     if (!res.ok) return {};
     const j = (await res.json()) as {
       display_name?: string;
