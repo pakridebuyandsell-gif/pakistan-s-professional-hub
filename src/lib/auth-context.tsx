@@ -49,13 +49,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!auth) { setLoading(false); return; }
       unsub = onAuthStateChanged(auth, (u) => {
         setUser(u);
-        // Rehydrate role from email binding when signing in on a new device
         if (u?.email) {
+          // Always trust the role bound to this email; clear any stale value.
           const bound = getRoleForEmail(u.email);
           if (bound) {
             localStorage.setItem(ACCOUNT_TYPE_KEY, bound);
             setAccountTypeState(bound);
+          } else {
+            localStorage.removeItem(ACCOUNT_TYPE_KEY);
+            setAccountTypeState(null);
           }
+        } else {
+          // Signed out — clear role so the next account starts clean.
+          localStorage.removeItem(ACCOUNT_TYPE_KEY);
+          setAccountTypeState(null);
         }
         setLoading(false);
       });
