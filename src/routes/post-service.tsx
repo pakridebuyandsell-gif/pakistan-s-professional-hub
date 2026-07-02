@@ -7,6 +7,9 @@ import { providersService } from "@/services/providers.service";
 import { SERVICE_CATEGORIES, PK_CITIES } from "@/services/mock";
 import { useAuth } from "@/lib/auth-context";
 import { toast } from "sonner";
+import { ImageUploader, UploadingOverlay } from "@/components/ImageUploader";
+import { uploadsService } from "@/services/uploads.service";
+import { z } from "zod";
 
 export const Route = createFileRoute("/post-service")({
   head: () => ({
@@ -25,6 +28,8 @@ const STEPS = ["Service Details", "Pricing", "Gallery & Portfolio", "Review & Pu
 
 function PostServicePage() {
   const [step, setStep] = useState(0);
+  const [images, setImages] = useState<File[]>([]);
+  const [busy, setBusy] = useState(false);
   const [form, setForm] = useState({
     title: "", category: "", subCategory: "", shortDesc: "", detailedDesc: "",
     city: "", travelToCustomer: true, workingDays: "", from: "", to: "",
@@ -34,18 +39,67 @@ function PostServicePage() {
   const navigate = useNavigate();
   const update = (k: string, v: string | boolean | number) => setForm((f) => ({ ...f, [k]: v }));
 
+  const stepSchemas = [
+    z.object({
+      title: z.string().trim().min(4, "Title must be at least 4 characters").max(120),
+      category: z.string().min(1, "Select a category"),
+      subCategory: z.string().trim().min(2, "Sub-category is required").max(80),
+      shortDesc: z.string().trim().min(10, "Short description too short").max(160),
+      detailedDesc: z.string().trim().min(30, "Please add at least 30 characters").max(2000),
+      city: z.string().min(1, "Select a city"),
+    }),
+    z.object({
+      rate: z.coerce.number().positive("Enter a valid rate"),
+      rateType: z.enum(["hourly", "fixed", "daily"]),
+    }),
+    z.object({}),
+    z.object({}),
+  ] as const;
+
+  const validateCurrent = () => {
+    const result = stepSchemas[step].safeParse(form);
+    if (!result.success) {
+      const first = result.error.issues[0];
+      toast.error(first?.message ?? "Please complete the required fields");
+      return false;
+    }
+    return true;
+  };
+
+  const next = () => { if (validateCurrent()) setStep((s) => s + 1); };
+
   const submit = async () => {
     if (!user) { toast.error("Please login to post a service"); navigate({ to: "/auth/login" }); return; }
+    // Re-run full validation
+    for (const s of stepSchemas) {
+      const r = s.safeParse(form);
+      if (!r.success) { toast.error(r.error.issues[0].message); return; }
+    }
+    setBusy(true);
     try {
-      await providersService.create({
+      const uploaded = images.length ? await uploadsService.uploadMany(images) : [];
+      const payload: Record<string, unknown> = {
         name: form.title, category: form.category, city: form.city,
-        description: form.detailedDesc, tags: form.tags.split(",").map((t) => t.trim()).filter(Boolean),
+        description: form.detailedDesc,
+        tags: form.tags.split(",").map((t) => t.trim()).filter(Boolean),
         hourlyRate: Number(form.rate) || undefined, currency: "PKR",
-      });
+        avatarUrl: uploaded[0]?.url,
+        images: uploaded.map((u) => u.url),
+        subCategory: form.subCategory,
+        shortDescription: form.shortDesc,
+        rateType: form.rateType,
+        workingDays: form.workingDays,
+        hoursFrom: form.from,
+        hoursTo: form.to,
+        travelToCustomer: form.travelToCustomer,
+      };
+      await providersService.create(payload as never);
       toast.success("Service posted successfully");
       navigate({ to: "/dashboard" });
     } catch {
       toast.error("Could not post service — backend not connected yet.");
+    } finally {
+      setBusy(false);
     }
   };
 
@@ -122,31 +176,39 @@ function PostServicePage() {
               {step === 2 && (
                 <div className="space-y-4">
                   <h3 className="text-lg font-bold">Gallery & Portfolio</h3>
-                  <div className="rounded-xl border-2 border-dashed border-border p-10 text-center">
-                    <p className="text-sm text-muted-foreground">Upload up to <b>4 images</b> of your work</p>
-                    <p className="mt-1 text-xs text-muted-foreground">JPG, PNG or GIF, max 2MB each</p>
-                    <input type="file" multiple accept="image/*" className="mt-4 text-xs" />
-                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Add up to 4 photos of your previous work. Great photos double your conversion rate.
+                  </p>
+                  <ImageUploader value={images} onChange={setImages} max={4} />
                 </div>
               )}
               {step === 3 && (
                 <div className="space-y-3">
                   <h3 className="text-lg font-bold">Review & Publish</h3>
                   <div className="rounded-xl border border-border p-4 text-sm">
-                    <p><b>{form.title || "—"}</b> • {form.category || "—"}</p>
-                    <p className="text-muted-foreground">{form.city}</p>
+                    <p><b>{form.title || "—"}</b> • {form.category || "—"}{form.subCategory ? ` · ${form.subCategory}` : ""}</p>
+                    <p className="text-muted-foreground">{form.city}{form.workingDays ? ` · ${form.workingDays}` : ""}{form.from && form.to ? ` · ${form.from}–${form.to}` : ""}</p>
                     <p className="mt-2 text-[var(--brand-orange)] font-semibold">PKR {form.rate || "—"} / {form.rateType}</p>
                     <p className="mt-2 whitespace-pre-wrap text-sm text-muted-foreground">{form.detailedDesc}</p>
+                    {images.length > 0 && (
+                      <div className="mt-3 grid grid-cols-4 gap-2">
+                        {images.map((f, i) => (
+                          <img key={i} src={URL.createObjectURL(f)} alt="" className="aspect-square rounded-md object-cover" />
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
 
               <div className="mt-6 flex items-center justify-between border-t border-border pt-5">
-                <Button variant="outline" disabled={step === 0} onClick={() => setStep((s) => Math.max(0, s - 1))}>Back</Button>
+                <Button variant="outline" disabled={step === 0 || busy} onClick={() => setStep((s) => Math.max(0, s - 1))}>Back</Button>
                 {step < STEPS.length - 1 ? (
-                  <Button onClick={() => setStep((s) => s + 1)} className="bg-[var(--brand-orange)] hover:bg-[var(--brand-orange-dark)] text-white">Save & Next</Button>
+                  <Button onClick={next} className="bg-[var(--brand-orange)] hover:bg-[var(--brand-orange-dark)] text-white">Save & Next</Button>
                 ) : (
-                  <Button onClick={submit} className="bg-[var(--brand-orange)] hover:bg-[var(--brand-orange-dark)] text-white">Publish Service</Button>
+                  <Button onClick={submit} disabled={busy} className="bg-[var(--brand-orange)] hover:bg-[var(--brand-orange-dark)] text-white">
+                    {busy ? "Publishing…" : "Publish Service"}
+                  </Button>
                 )}
               </div>
             </div>
@@ -172,6 +234,7 @@ function PostServicePage() {
         </div>
       </section>
       <Footer />
+      <UploadingOverlay active={busy} label="Publishing your service…" />
       <style>{`.input{width:100%;border:1px solid var(--color-input);background:white;border-radius:var(--radius-md);padding:0.65rem 0.75rem;font-size:0.875rem;outline:none}.input:focus{border-color:var(--brand-orange);box-shadow:0 0 0 3px oklch(0.7 0.19 47 / 0.15)}`}</style>
     </div>
   );
