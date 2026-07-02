@@ -73,7 +73,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     user, loading, accountType,
 
     signInEmail: async (email, password) => {
-      await signInWithEmailAndPassword(await requireFirebaseAuth(), email, password);
+      const cred = await signInWithEmailAndPassword(await requireFirebaseAuth(), email, password);
+      // Always use the role bound to THIS email — never carry over a stale
+      // accountType from a previous session/registration on the same device.
+      const bound = getRoleForEmail(cred.user.email ?? email);
+      if (bound) setAccountType(bound);
+      else localStorage.removeItem(ACCOUNT_TYPE_KEY);
     },
 
     signUpEmail: async (email, password, fullName, t, extra) => {
