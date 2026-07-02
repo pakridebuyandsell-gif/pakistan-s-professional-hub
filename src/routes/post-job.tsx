@@ -7,6 +7,9 @@ import { jobsService } from "@/services/jobs.service";
 import { JOB_CATEGORIES, PK_CITIES } from "@/services/mock";
 import { useAuth } from "@/lib/auth-context";
 import { toast } from "sonner";
+import { z } from "zod";
+import { ImageUploader, UploadingOverlay } from "@/components/ImageUploader";
+import { uploadsService } from "@/services/uploads.service";
 
 export const Route = createFileRoute("/post-job")({
   head: () => ({
@@ -25,6 +28,8 @@ const STEPS = ["Job Details", "Requirements", "Salary & Benefits", "Review & Pub
 
 function PostJobPage() {
   const [step, setStep] = useState(0);
+  const [logo, setLogo] = useState<File[]>([]);
+  const [busy, setBusy] = useState(false);
   const [form, setForm] = useState({
     title: "", category: "", type: "Full Time", city: "", vacancies: 1,
     deadline: "", description: "", company: "", requirements: "",
@@ -35,18 +40,64 @@ function PostJobPage() {
 
   const update = (k: string, v: string | number) => setForm((f) => ({ ...f, [k]: v }));
 
+  const stepSchemas = [
+    z.object({
+      title: z.string().trim().min(4, "Job title must be at least 4 characters").max(120),
+      category: z.string().min(1, "Select a category"),
+      type: z.string().min(1),
+      city: z.string().min(1, "Select a city"),
+      vacancies: z.coerce.number().int().min(1, "At least 1 vacancy"),
+      description: z.string().trim().min(30, "Description too short — add at least 30 characters"),
+      company: z.string().trim().min(2, "Company name is required"),
+    }),
+    z.object({}),
+    z.object({
+      salaryMin: z.string().optional(),
+      salaryMax: z.string().optional(),
+    }).refine((v) => {
+      if (v.salaryMin && v.salaryMax) return Number(v.salaryMin) <= Number(v.salaryMax);
+      return true;
+    }, "Min salary cannot exceed max salary"),
+    z.object({}),
+  ] as const;
+
+  const next = () => {
+    const r = stepSchemas[step].safeParse(form);
+    if (!r.success) { toast.error(r.error.issues[0].message); return; }
+    setStep((s) => s + 1);
+  };
+
   const submit = async () => {
     if (!user) { toast.error("Please login to post a job"); navigate({ to: "/auth/login" }); return; }
+    for (const s of stepSchemas) {
+      const r = s.safeParse(form);
+      if (!r.success) { toast.error(r.error.issues[0].message); return; }
+    }
+    setBusy(true);
     try {
-      await jobsService.create({
-        title: form.title, category: form.category, employmentType: form.type as never,
+      const uploaded = logo.length ? await uploadsService.uploadMany(logo) : [];
+      const payload: Record<string, unknown> = {
+        title: form.title, category: form.category, employmentType: form.type,
         city: form.city, location: `${form.city}, Pakistan`, company: form.company,
-        salaryMin: Number(form.salaryMin) || undefined, salaryMax: Number(form.salaryMax) || undefined, currency: "PKR",
-      });
+        companyLogo: uploaded[0]?.url,
+        description: form.description,
+        vacancies: form.vacancies,
+        deadline: form.deadline || undefined,
+        requirements: form.requirements,
+        experience: form.experience,
+        education: form.education,
+        benefits: form.benefits,
+        salaryMin: Number(form.salaryMin) || undefined,
+        salaryMax: Number(form.salaryMax) || undefined,
+        currency: "PKR",
+      };
+      await jobsService.create(payload as never);
       toast.success("Job posted successfully");
       navigate({ to: "/dashboard" });
-    } catch (e) {
+    } catch {
       toast.error("Could not post job — backend not connected yet.");
+    } finally {
+      setBusy(false);
     }
   };
 
