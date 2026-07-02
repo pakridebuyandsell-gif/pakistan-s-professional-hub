@@ -7,6 +7,9 @@ import { providersService } from "@/services/providers.service";
 import { SERVICE_CATEGORIES, PK_CITIES } from "@/services/mock";
 import { useAuth } from "@/lib/auth-context";
 import { toast } from "sonner";
+import { ImageUploader, UploadingOverlay } from "@/components/ImageUploader";
+import { uploadsService } from "@/services/uploads.service";
+import { z } from "zod";
 
 export const Route = createFileRoute("/post-service")({
   head: () => ({
@@ -25,6 +28,8 @@ const STEPS = ["Service Details", "Pricing", "Gallery & Portfolio", "Review & Pu
 
 function PostServicePage() {
   const [step, setStep] = useState(0);
+  const [images, setImages] = useState<File[]>([]);
+  const [busy, setBusy] = useState(false);
   const [form, setForm] = useState({
     title: "", category: "", subCategory: "", shortDesc: "", detailedDesc: "",
     city: "", travelToCustomer: true, workingDays: "", from: "", to: "",
@@ -34,18 +39,63 @@ function PostServicePage() {
   const navigate = useNavigate();
   const update = (k: string, v: string | boolean | number) => setForm((f) => ({ ...f, [k]: v }));
 
+  const stepSchemas = [
+    z.object({
+      title: z.string().trim().min(4, "Title must be at least 4 characters").max(120),
+      category: z.string().min(1, "Select a category"),
+      subCategory: z.string().trim().min(2, "Sub-category is required").max(80),
+      shortDesc: z.string().trim().min(10, "Short description too short").max(160),
+      detailedDesc: z.string().trim().min(30, "Please add at least 30 characters").max(2000),
+      city: z.string().min(1, "Select a city"),
+    }),
+    z.object({
+      rate: z.coerce.number().positive("Enter a valid rate"),
+      rateType: z.enum(["hourly", "fixed", "daily"]),
+    }),
+    z.object({}),
+    z.object({}),
+  ] as const;
+
+  const validateCurrent = () => {
+    const result = stepSchemas[step].safeParse(form);
+    if (!result.success) {
+      const first = result.error.issues[0];
+      toast.error(first?.message ?? "Please complete the required fields");
+      return false;
+    }
+    return true;
+  };
+
+  const next = () => { if (validateCurrent()) setStep((s) => s + 1); };
+
   const submit = async () => {
     if (!user) { toast.error("Please login to post a service"); navigate({ to: "/auth/login" }); return; }
+    // Re-run full validation
+    for (const s of stepSchemas) {
+      const r = s.safeParse(form);
+      if (!r.success) { toast.error(r.error.issues[0].message); return; }
+    }
+    setBusy(true);
     try {
+      const uploaded = images.length ? await uploadsService.uploadMany(images) : [];
       await providersService.create({
         name: form.title, category: form.category, city: form.city,
-        description: form.detailedDesc, tags: form.tags.split(",").map((t) => t.trim()).filter(Boolean),
+        description: form.detailedDesc,
+        tags: form.tags.split(",").map((t) => t.trim()).filter(Boolean),
         hourlyRate: Number(form.rate) || undefined, currency: "PKR",
+        avatarUrl: uploaded[0]?.url,
+        // additional fields sent as-is; backend can ignore unknown keys
+        ...({ images: uploaded.map((u) => u.url), subCategory: form.subCategory,
+              shortDescription: form.shortDesc, rateType: form.rateType,
+              workingDays: form.workingDays, hoursFrom: form.from, hoursTo: form.to,
+              travelToCustomer: form.travelToCustomer } as never),
       });
       toast.success("Service posted successfully");
       navigate({ to: "/dashboard" });
     } catch {
       toast.error("Could not post service — backend not connected yet.");
+    } finally {
+      setBusy(false);
     }
   };
 
