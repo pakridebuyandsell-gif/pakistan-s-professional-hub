@@ -292,7 +292,15 @@ function ServicesMarketplace() {
           <div className="lg:col-span-2">
             <h3 className="mb-3 text-sm font-semibold text-muted-foreground">Top Rated Service Providers</h3>
             <div className="grid gap-4 sm:grid-cols-2">
-              {MOCK_PROVIDERS.slice(0, 4).map((p) => (
+              {isLoading && <div className="col-span-full p-6 text-center text-xs text-muted-foreground">Loading providers…</div>}
+              {!isLoading && providers.length === 0 && (
+                <div className="col-span-full card-elevated p-8 text-center">
+                  <Wrench className="mx-auto mb-2 h-8 w-8 text-muted-foreground/50" />
+                  <p className="text-sm font-semibold">No service providers yet</p>
+                  <p className="mt-1 text-xs text-muted-foreground">Post your service to get discovered.</p>
+                </div>
+              )}
+              {providers.slice(0, 4).map((p) => (
                 <div key={p.id} className="card-elevated card-elevated-hover p-4">
                   <div className="flex items-center gap-3">
                     <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[var(--brand-orange)]/10 text-[var(--brand-orange)] font-bold">
@@ -304,9 +312,11 @@ function ServicesMarketplace() {
                         <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" /> {p.rating} ({p.reviews}) • {p.city}
                       </div>
                     </div>
-                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${p.level === "Gold" ? "bg-yellow-100 text-yellow-800" : p.level === "Silver" ? "bg-slate-200 text-slate-700" : "bg-amber-100 text-amber-800"}`}>
-                      {p.level}
-                    </span>
+                    {p.level && (
+                      <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${p.level === "Gold" ? "bg-yellow-100 text-yellow-800" : p.level === "Silver" ? "bg-slate-200 text-slate-700" : "bg-amber-100 text-amber-800"}`}>
+                        {p.level}
+                      </span>
+                    )}
                   </div>
                   <Link to="/find-services" className="mt-3 block">
                     <Button variant="outline" size="sm" className="w-full border-[var(--brand-orange)]/30 text-[var(--brand-orange)] hover:bg-[var(--brand-orange)]/5">View Profile</Button>
