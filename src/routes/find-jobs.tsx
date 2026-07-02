@@ -2,9 +2,13 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
-import { MOCK_JOBS, JOB_CATEGORIES, PK_CITIES } from "@/services/mock";
-import { Search, MapPin, Bookmark, Briefcase } from "lucide-react";
+import { JOB_CATEGORIES, PK_CITIES } from "@/services/mock";
+import { jobsService } from "@/services/jobs.service";
+import { Search, MapPin, Bookmark, Briefcase, LocateFixed, Loader2 } from "lucide-react";
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { useGeolocation } from "@/hooks/useGeolocation";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/find-jobs")({
   head: () => ({
@@ -23,12 +27,27 @@ function FindJobsPage() {
   const [q, setQ] = useState("");
   const [city, setCity] = useState("");
   const [cat, setCat] = useState("");
+  const geo = useGeolocation();
 
-  const filtered = MOCK_JOBS.filter((j) =>
-    (!q || j.title.toLowerCase().includes(q.toLowerCase())) &&
-    (!city || j.city === city) &&
-    (!cat || j.category === cat),
-  );
+  const query = useQuery({
+    queryKey: ["jobs", { q, city, cat }],
+    queryFn: () => jobsService.list({ q, city, category: cat }),
+    retry: 0,
+  });
+
+  const jobs = query.data?.items ?? [];
+
+  const useMyLocation = async () => {
+    const r = await geo.request();
+    if (r?.city) {
+      // match against known city list (case-insensitive)
+      const matched = PK_CITIES.find((c) => c.toLowerCase() === r.city!.toLowerCase());
+      setCity(matched ?? r.city);
+      toast.success(`Location set to ${matched ?? r.city}`);
+    } else if (geo.error) {
+      toast.error(geo.error);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -41,7 +60,7 @@ function FindJobsPage() {
           </nav>
           <h1 className="text-3xl font-bold md:text-4xl">Find the right job</h1>
           <p className="mt-2 max-w-xl text-muted-foreground">
-            Discover thousands of employment opportunities across Pakistan.
+            Discover employment opportunities across Pakistan.
           </p>
 
           <div className="mt-6 flex flex-col gap-2 rounded-2xl bg-white p-3 shadow-[var(--shadow-card)] ring-1 ring-border md:flex-row">
@@ -53,12 +72,20 @@ function FindJobsPage() {
               <option value="">All Categories</option>
               {JOB_CATEGORIES.map((c) => <option key={c}>{c}</option>)}
             </select>
-            <div className="flex items-center gap-2 rounded-xl border border-input px-3 md:w-48">
+            <div className="flex items-center gap-2 rounded-xl border border-input px-3 md:w-56">
               <MapPin className="h-4 w-4 text-muted-foreground" />
               <select value={city} onChange={(e) => setCity(e.target.value)} className="w-full bg-transparent py-3 text-sm outline-none">
                 <option value="">All Pakistan</option>
                 {PK_CITIES.map((c) => <option key={c}>{c}</option>)}
               </select>
+              <button
+                type="button"
+                onClick={useMyLocation}
+                title="Use my location"
+                className="shrink-0 rounded-md p-1 text-[var(--brand-green)] hover:bg-[var(--brand-green)]/10"
+              >
+                {geo.loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <LocateFixed className="h-4 w-4" />}
+              </button>
             </div>
             <Button className="bg-[var(--brand-green)] hover:bg-[var(--brand-green-dark)] text-white h-auto min-h-12">Search Jobs</Button>
           </div>
@@ -68,24 +95,41 @@ function FindJobsPage() {
       <section className="mx-auto grid max-w-7xl gap-6 px-4 py-8 lg:grid-cols-[260px_1fr]">
         <aside className="card-elevated h-fit p-5">
           <h3 className="mb-3 flex items-center justify-between text-sm font-semibold">
-            Filters <button className="text-xs font-normal text-[var(--brand-green)]">Clear All</button>
+            Filters <button onClick={() => { setQ(""); setCity(""); setCat(""); }} className="text-xs font-normal text-[var(--brand-green)]">Clear All</button>
           </h3>
-          <FilterGroup title="Job Category" items={JOB_CATEGORIES} />
-          <FilterGroup title="Job Type" items={["Full Time", "Part Time", "Contract", "Internship"]} />
-          <FilterGroup title="Location" items={PK_CITIES.slice(0, 6)} />
-          <FilterGroup title="Experience Level" items={["Fresher", "1-2 Years", "3-5 Years", "5+ Years"]} />
+          <FilterGroup title="Job Category" items={JOB_CATEGORIES} selected={cat} onToggle={(v) => setCat(cat === v ? "" : v)} />
+          <FilterGroup title="Location" items={PK_CITIES.slice(0, 8)} selected={city} onToggle={(v) => setCity(city === v ? "" : v)} />
         </aside>
 
         <div>
           <div className="mb-4 flex items-center justify-between">
-            <p className="text-sm font-semibold">{filtered.length.toLocaleString()} Jobs Found</p>
+            <p className="text-sm font-semibold">
+              {query.isLoading ? "Loading jobs…" : `${jobs.length.toLocaleString()} Jobs Found`}
+            </p>
             <select className="rounded-lg border border-input bg-white px-3 py-2 text-xs">
-              <option>Most Recent</option><option>Highest Salary</option><option>Most Relevant</option>
+              <option>Most Recent</option><option>Highest Salary</option>
             </select>
           </div>
 
+          {query.isError && (
+            <div className="card-elevated p-6 text-center text-sm text-muted-foreground">
+              Couldn't reach the jobs API. Please try again shortly.
+            </div>
+          )}
+
+          {!query.isLoading && !query.isError && jobs.length === 0 && (
+            <div className="card-elevated p-10 text-center">
+              <Briefcase className="mx-auto mb-3 h-10 w-10 text-muted-foreground/50" />
+              <p className="text-sm font-semibold">No jobs found yet</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Be the first employer to post a job — it takes less than a minute.
+              </p>
+              <Link to="/post-job"><Button className="mt-4 bg-[var(--brand-green)] text-white hover:bg-[var(--brand-green-dark)]">Post a Job</Button></Link>
+            </div>
+          )}
+
           <div className="space-y-3">
-            {filtered.map((j) => (
+            {jobs.map((j) => (
               <article key={j.id} className="card-elevated card-elevated-hover flex flex-wrap items-start gap-4 p-5">
                 <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-[var(--brand-green)]/10 text-[var(--brand-green)]">
                   <Briefcase className="h-7 w-7" />
@@ -121,14 +165,14 @@ function FindJobsPage() {
   );
 }
 
-function FilterGroup({ title, items }: { title: string; items: string[] }) {
+function FilterGroup({ title, items, selected, onToggle }: { title: string; items: string[]; selected: string; onToggle: (v: string) => void }) {
   return (
     <div className="mb-5">
       <p className="mb-2 text-xs font-semibold text-muted-foreground">{title}</p>
       <div className="space-y-1.5">
         {items.map((i) => (
           <label key={i} className="flex cursor-pointer items-center gap-2 text-sm">
-            <input type="checkbox" className="accent-[var(--brand-green)]" /> {i}
+            <input type="checkbox" checked={selected === i} onChange={() => onToggle(i)} className="accent-[var(--brand-green)]" /> {i}
           </label>
         ))}
       </div>

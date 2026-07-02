@@ -1,11 +1,16 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
-import { MOCK_JOBS, MOCK_PROVIDERS, JOB_CATEGORIES, SERVICE_CATEGORIES } from "@/services/mock";
+import { JOB_CATEGORIES, SERVICE_CATEGORIES, PK_CITIES } from "@/services/mock";
+import { jobsService } from "@/services/jobs.service";
+import { providersService } from "@/services/providers.service";
+import { useQuery } from "@tanstack/react-query";
+import { useGeolocation } from "@/hooks/useGeolocation";
+import { toast } from "sonner";
 import {
   Search, Briefcase, Wrench, Megaphone, MapPin, ArrowRight, ShieldCheck, Users, Globe,
-  Headphones, Star, CheckCircle2, ChevronRight,
+  Headphones, Star, CheckCircle2, ChevronRight, LocateFixed, Loader2,
 } from "lucide-react";
 import { useState } from "react";
 
@@ -41,6 +46,26 @@ function HomePage() {
 function Hero() {
   const [tab, setTab] = useState<"jobs" | "services">("jobs");
   const [q, setQ] = useState("");
+  const [city, setCity] = useState("");
+  const geo = useGeolocation();
+  const navigate = useNavigate();
+
+  const useMyLocation = async () => {
+    const r = await geo.request();
+    if (r?.city) {
+      const matched = PK_CITIES.find((c) => c.toLowerCase() === r.city!.toLowerCase());
+      setCity(matched ?? r.city);
+      toast.success(`Location set to ${matched ?? r.city}`);
+    } else if (geo.error) {
+      toast.error(geo.error);
+    }
+  };
+
+  const submit = (e: React.FormEvent) => {
+    e.preventDefault();
+    navigate({ to: tab === "jobs" ? "/find-jobs" : "/find-services" });
+  };
+
   return (
     <section className="relative overflow-hidden">
       <div className="pointer-events-none absolute inset-0 -z-10">
@@ -49,7 +74,7 @@ function Hero() {
       </div>
       <div className="mx-auto max-w-6xl px-4 pt-14 pb-10 text-center md:pt-24">
         <span className="mb-4 inline-flex items-center gap-2 rounded-full border border-border bg-white px-3 py-1 text-xs font-medium text-muted-foreground shadow-[var(--shadow-soft)]">
-          <span className="h-1.5 w-1.5 rounded-full bg-[var(--brand-green)]" /> Trusted by 10,000+ Pakistanis
+          <span className="h-1.5 w-1.5 rounded-full bg-[var(--brand-green)]" /> Pakistan's Marketplace
         </span>
         <h1 className="text-balance text-4xl font-extrabold leading-tight md:text-6xl">
           Pakistan's Marketplace for
@@ -77,10 +102,7 @@ function Hero() {
               Services
             </button>
           </div>
-          <form
-            className="flex flex-col gap-2 md:flex-row md:items-stretch"
-            onSubmit={(e) => e.preventDefault()}
-          >
+          <form className="flex flex-col gap-2 md:flex-row md:items-stretch" onSubmit={submit}>
             <div className="flex flex-1 items-center gap-2 rounded-xl border border-input px-3">
               <Search className="h-4 w-4 text-muted-foreground" />
               <input
@@ -90,18 +112,24 @@ function Hero() {
                 className="w-full bg-transparent py-3 text-sm outline-none"
               />
             </div>
-            <div className="flex items-center gap-2 rounded-xl border border-input px-3 md:w-52">
+            <div className="flex items-center gap-2 rounded-xl border border-input px-3 md:w-56">
               <MapPin className="h-4 w-4 text-muted-foreground" />
-              <select className="w-full bg-transparent py-3 text-sm outline-none">
-                <option>All Pakistan</option>
-                <option>Lahore</option><option>Karachi</option><option>Islamabad</option><option>Rawalpindi</option>
+              <select value={city} onChange={(e) => setCity(e.target.value)} className="w-full bg-transparent py-3 text-sm outline-none">
+                <option value="">All Pakistan</option>
+                {PK_CITIES.map((c) => <option key={c}>{c}</option>)}
               </select>
+              <button
+                type="button"
+                onClick={useMyLocation}
+                title="Use my location"
+                className={`shrink-0 rounded-md p-1 ${tab === "jobs" ? "text-[var(--brand-green)] hover:bg-[var(--brand-green)]/10" : "text-[var(--brand-orange)] hover:bg-[var(--brand-orange)]/10"}`}
+              >
+                {geo.loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <LocateFixed className="h-4 w-4" />}
+              </button>
             </div>
-            <Link to={tab === "jobs" ? "/find-jobs" : "/find-services"}>
-              <Button size="lg" className={`h-full min-h-12 w-full md:w-auto ${tab === "services" ? "bg-[var(--brand-orange)] hover:bg-[var(--brand-orange-dark)]" : "bg-[var(--brand-green)] hover:bg-[var(--brand-green-dark)]"} text-white`}>
-                Search <ArrowRight className="ml-1 h-4 w-4" />
-              </Button>
-            </Link>
+            <Button type="submit" size="lg" className={`h-full min-h-12 w-full md:w-auto ${tab === "services" ? "bg-[var(--brand-orange)] hover:bg-[var(--brand-orange-dark)]" : "bg-[var(--brand-green)] hover:bg-[var(--brand-green-dark)]"} text-white`}>
+              Search <ArrowRight className="ml-1 h-4 w-4" />
+            </Button>
           </form>
         </div>
       </div>
@@ -146,6 +174,12 @@ function QuickActions() {
 }
 
 function JobsMarketplace() {
+  const { data, isLoading } = useQuery({
+    queryKey: ["jobs", "home"],
+    queryFn: () => jobsService.list({ limit: 4 }),
+    retry: 0,
+  });
+  const jobs = data?.items ?? [];
   return (
     <section className="mx-auto max-w-7xl px-4 py-8">
       <div className="card-elevated p-5 md:p-8">
@@ -173,7 +207,15 @@ function JobsMarketplace() {
           <div className="lg:col-span-2">
             <h3 className="mb-3 text-sm font-semibold text-muted-foreground">Latest Job Listings</h3>
             <div className="divide-y divide-border rounded-xl border border-border bg-white">
-              {MOCK_JOBS.slice(0, 4).map((j) => (
+              {isLoading && <div className="p-6 text-center text-xs text-muted-foreground">Loading latest jobs…</div>}
+              {!isLoading && jobs.length === 0 && (
+                <div className="p-8 text-center">
+                  <Briefcase className="mx-auto mb-2 h-8 w-8 text-muted-foreground/50" />
+                  <p className="text-sm font-semibold">No jobs posted yet</p>
+                  <p className="mt-1 text-xs text-muted-foreground">Be the first to hire on WorqGo.</p>
+                </div>
+              )}
+              {jobs.slice(0, 4).map((j) => (
                 <div key={j.id} className="flex flex-wrap items-center gap-4 p-4 hover:bg-muted/30">
                   <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-[var(--brand-green)]/10 text-[var(--brand-green)]">
                     <Briefcase className="h-5 w-5" />
@@ -217,6 +259,12 @@ function JobsMarketplace() {
 }
 
 function ServicesMarketplace() {
+  const { data, isLoading } = useQuery({
+    queryKey: ["providers", "home"],
+    queryFn: () => providersService.list({ limit: 4 }),
+    retry: 0,
+  });
+  const providers = data?.items ?? [];
   return (
     <section className="mx-auto max-w-7xl px-4 py-8">
       <div className="card-elevated p-5 md:p-8">
@@ -244,7 +292,15 @@ function ServicesMarketplace() {
           <div className="lg:col-span-2">
             <h3 className="mb-3 text-sm font-semibold text-muted-foreground">Top Rated Service Providers</h3>
             <div className="grid gap-4 sm:grid-cols-2">
-              {MOCK_PROVIDERS.slice(0, 4).map((p) => (
+              {isLoading && <div className="col-span-full p-6 text-center text-xs text-muted-foreground">Loading providers…</div>}
+              {!isLoading && providers.length === 0 && (
+                <div className="col-span-full card-elevated p-8 text-center">
+                  <Wrench className="mx-auto mb-2 h-8 w-8 text-muted-foreground/50" />
+                  <p className="text-sm font-semibold">No service providers yet</p>
+                  <p className="mt-1 text-xs text-muted-foreground">Post your service to get discovered.</p>
+                </div>
+              )}
+              {providers.slice(0, 4).map((p) => (
                 <div key={p.id} className="card-elevated card-elevated-hover p-4">
                   <div className="flex items-center gap-3">
                     <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[var(--brand-orange)]/10 text-[var(--brand-orange)] font-bold">
@@ -256,9 +312,11 @@ function ServicesMarketplace() {
                         <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" /> {p.rating} ({p.reviews}) • {p.city}
                       </div>
                     </div>
-                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${p.level === "Gold" ? "bg-yellow-100 text-yellow-800" : p.level === "Silver" ? "bg-slate-200 text-slate-700" : "bg-amber-100 text-amber-800"}`}>
-                      {p.level}
-                    </span>
+                    {p.level && (
+                      <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${p.level === "Gold" ? "bg-yellow-100 text-yellow-800" : p.level === "Silver" ? "bg-slate-200 text-slate-700" : "bg-amber-100 text-amber-800"}`}>
+                        {p.level}
+                      </span>
+                    )}
                   </div>
                   <Link to="/find-services" className="mt-3 block">
                     <Button variant="outline" size="sm" className="w-full border-[var(--brand-orange)]/30 text-[var(--brand-orange)] hover:bg-[var(--brand-orange)]/5">View Profile</Button>
