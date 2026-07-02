@@ -207,7 +207,15 @@ function JobsMarketplace() {
           <div className="lg:col-span-2">
             <h3 className="mb-3 text-sm font-semibold text-muted-foreground">Latest Job Listings</h3>
             <div className="divide-y divide-border rounded-xl border border-border bg-white">
-              {MOCK_JOBS.slice(0, 4).map((j) => (
+              {isLoading && <div className="p-6 text-center text-xs text-muted-foreground">Loading latest jobs…</div>}
+              {!isLoading && jobs.length === 0 && (
+                <div className="p-8 text-center">
+                  <Briefcase className="mx-auto mb-2 h-8 w-8 text-muted-foreground/50" />
+                  <p className="text-sm font-semibold">No jobs posted yet</p>
+                  <p className="mt-1 text-xs text-muted-foreground">Be the first to hire on WorqGo.</p>
+                </div>
+              )}
+              {jobs.slice(0, 4).map((j) => (
                 <div key={j.id} className="flex flex-wrap items-center gap-4 p-4 hover:bg-muted/30">
                   <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-[var(--brand-green)]/10 text-[var(--brand-green)]">
                     <Briefcase className="h-5 w-5" />
