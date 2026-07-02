@@ -1,0 +1,61 @@
+services:
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: worqgo-frontend:latest
+    container_name: worqgo-frontend
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      HOST: 0.0.0.0
+      PORT: 3001
+      NITRO_HOST: 0.0.0.0
+      NITRO_PORT: 3001
+      VITE_API_URL: https://api.worqgo.com
+    expose:
+      - "3001"
+    networks:
+      - web
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=web"
+
+      # HTTP router -> redirect to HTTPS
+      - "traefik.http.routers.worqgo-http.rule=Host(`worqgo.com`) || Host(`www.worqgo.com`)"
+      - "traefik.http.routers.worqgo-http.entrypoints=web"
+      - "traefik.http.routers.worqgo-http.middlewares=worqgo-redirect-https"
+      - "traefik.http.middlewares.worqgo-redirect-https.redirectscheme.scheme=https"
+      - "traefik.http.middlewares.worqgo-redirect-https.redirectscheme.permanent=true"
+
+      # HTTPS router
+      - "traefik.http.routers.worqgo.rule=Host(`worqgo.com`) || Host(`www.worqgo.com`)"
+      - "traefik.http.routers.worqgo.entrypoints=websecure"
+      - "traefik.http.routers.worqgo.tls=true"
+      - "traefik.http.routers.worqgo.tls.certresolver=letsencrypt"
+      - "traefik.http.services.worqgo.loadbalancer.server.port=3001"
+
+      # Redirect www -> apex (canonical host)
+      - "traefik.http.middlewares.worqgo-www-redirect.redirectregex.regex=^https://www\\.worqgo\\.com/(.*)"
+      - "traefik.http.middlewares.worqgo-www-redirect.redirectregex.replacement=https://worqgo.com/$${1}"
+      - "traefik.http.middlewares.worqgo-www-redirect.redirectregex.permanent=true"
+
+      # Gzip compression
+      - "traefik.http.middlewares.worqgo-compress.compress=true"
+
+      # Long-term cache headers for hashed static assets under /_build and /assets
+      - "traefik.http.middlewares.worqgo-static-cache.headers.customresponseheaders.Cache-Control=public, max-age=31536000, immutable"
+      - "traefik.http.routers.worqgo-static.rule=(Host(`worqgo.com`) || Host(`www.worqgo.com`)) && (PathPrefix(`/_build`) || PathPrefix(`/assets`) || PathPrefix(`/_server`))"
+      - "traefik.http.routers.worqgo-static.entrypoints=websecure"
+      - "traefik.http.routers.worqgo-static.tls=true"
+      - "traefik.http.routers.worqgo-static.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.worqgo-static.middlewares=worqgo-compress,worqgo-static-cache"
+      - "traefik.http.routers.worqgo-static.service=worqgo"
+      - "traefik.http.routers.worqgo-static.priority=100"
+
+      # Apply gzip + www redirect to main router
+      - "traefik.http.routers.worqgo.middlewares=worqgo-www-redirect,worqgo-compress"
+
+networks:
+  web:
+    external: true
