@@ -46,6 +46,26 @@ function HomePage() {
 function Hero() {
   const [tab, setTab] = useState<"jobs" | "services">("jobs");
   const [q, setQ] = useState("");
+  const [city, setCity] = useState("");
+  const geo = useGeolocation();
+  const navigate = useNavigate();
+
+  const useMyLocation = async () => {
+    const r = await geo.request();
+    if (r?.city) {
+      const matched = PK_CITIES.find((c) => c.toLowerCase() === r.city!.toLowerCase());
+      setCity(matched ?? r.city);
+      toast.success(`Location set to ${matched ?? r.city}`);
+    } else if (geo.error) {
+      toast.error(geo.error);
+    }
+  };
+
+  const submit = (e: React.FormEvent) => {
+    e.preventDefault();
+    navigate({ to: tab === "jobs" ? "/find-jobs" : "/find-services" });
+  };
+
   return (
     <section className="relative overflow-hidden">
       <div className="pointer-events-none absolute inset-0 -z-10">
@@ -54,7 +74,7 @@ function Hero() {
       </div>
       <div className="mx-auto max-w-6xl px-4 pt-14 pb-10 text-center md:pt-24">
         <span className="mb-4 inline-flex items-center gap-2 rounded-full border border-border bg-white px-3 py-1 text-xs font-medium text-muted-foreground shadow-[var(--shadow-soft)]">
-          <span className="h-1.5 w-1.5 rounded-full bg-[var(--brand-green)]" /> Trusted by 10,000+ Pakistanis
+          <span className="h-1.5 w-1.5 rounded-full bg-[var(--brand-green)]" /> Pakistan's Marketplace
         </span>
         <h1 className="text-balance text-4xl font-extrabold leading-tight md:text-6xl">
           Pakistan's Marketplace for
@@ -82,10 +102,7 @@ function Hero() {
               Services
             </button>
           </div>
-          <form
-            className="flex flex-col gap-2 md:flex-row md:items-stretch"
-            onSubmit={(e) => e.preventDefault()}
-          >
+          <form className="flex flex-col gap-2 md:flex-row md:items-stretch" onSubmit={submit}>
             <div className="flex flex-1 items-center gap-2 rounded-xl border border-input px-3">
               <Search className="h-4 w-4 text-muted-foreground" />
               <input
@@ -95,18 +112,24 @@ function Hero() {
                 className="w-full bg-transparent py-3 text-sm outline-none"
               />
             </div>
-            <div className="flex items-center gap-2 rounded-xl border border-input px-3 md:w-52">
+            <div className="flex items-center gap-2 rounded-xl border border-input px-3 md:w-56">
               <MapPin className="h-4 w-4 text-muted-foreground" />
-              <select className="w-full bg-transparent py-3 text-sm outline-none">
-                <option>All Pakistan</option>
-                <option>Lahore</option><option>Karachi</option><option>Islamabad</option><option>Rawalpindi</option>
+              <select value={city} onChange={(e) => setCity(e.target.value)} className="w-full bg-transparent py-3 text-sm outline-none">
+                <option value="">All Pakistan</option>
+                {PK_CITIES.map((c) => <option key={c}>{c}</option>)}
               </select>
+              <button
+                type="button"
+                onClick={useMyLocation}
+                title="Use my location"
+                className={`shrink-0 rounded-md p-1 ${tab === "jobs" ? "text-[var(--brand-green)] hover:bg-[var(--brand-green)]/10" : "text-[var(--brand-orange)] hover:bg-[var(--brand-orange)]/10"}`}
+              >
+                {geo.loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <LocateFixed className="h-4 w-4" />}
+              </button>
             </div>
-            <Link to={tab === "jobs" ? "/find-jobs" : "/find-services"}>
-              <Button size="lg" className={`h-full min-h-12 w-full md:w-auto ${tab === "services" ? "bg-[var(--brand-orange)] hover:bg-[var(--brand-orange-dark)]" : "bg-[var(--brand-green)] hover:bg-[var(--brand-green-dark)]"} text-white`}>
-                Search <ArrowRight className="ml-1 h-4 w-4" />
-              </Button>
-            </Link>
+            <Button type="submit" size="lg" className={`h-full min-h-12 w-full md:w-auto ${tab === "services" ? "bg-[var(--brand-orange)] hover:bg-[var(--brand-orange-dark)]" : "bg-[var(--brand-green)] hover:bg-[var(--brand-green-dark)]"} text-white`}>
+              Search <ArrowRight className="ml-1 h-4 w-4" />
+            </Button>
           </form>
         </div>
       </div>
