@@ -43,8 +43,8 @@ export function Footer() {
     <footer className="mt-20 border-t border-border bg-[oklch(0.16_0.02_250)] text-[oklch(0.9_0.005_250)]">
       <div className="mx-auto grid max-w-7xl gap-10 px-6 py-14 md:grid-cols-2 lg:grid-cols-5">
         <div className="lg:col-span-1">
-          <div className="mb-4 rounded-lg bg-white p-2 inline-block">
-            <Logo />
+          <div className="mb-4 inline-block rounded-2xl bg-white p-4 shadow-lg">
+            <Logo linked={false} imgClassName="h-28 w-auto md:h-36" />
           </div>
           <p className="text-sm leading-relaxed text-white/70">
             Pakistan's trusted marketplace for jobs and professional services.
