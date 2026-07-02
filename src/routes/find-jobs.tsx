@@ -8,7 +8,7 @@ import { Search, MapPin, Bookmark, Briefcase, LocateFixed, Loader2 } from "lucid
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useGeolocation } from "@/hooks/useGeolocation";
-import { formatLocationLabel, resolveKnownPakistaniCity } from "@/lib/location";
+import { formatLocationLabel, resolveCityForLocation } from "@/lib/location";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/find-jobs")({
@@ -42,7 +42,7 @@ function FindJobsPage() {
     const r = await geo.request();
     if (r) {
       const label = formatLocationLabel(r);
-      setCity(resolveKnownPakistaniCity(r.city) || label);
+      setCity(resolveCityForLocation(r) || label);
       toast.success(`Current location: ${label}`);
     } else {
       toast.error("Location permission blocked or unavailable.");

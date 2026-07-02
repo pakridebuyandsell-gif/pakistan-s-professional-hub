@@ -7,7 +7,7 @@ import { jobsService } from "@/services/jobs.service";
 import { providersService } from "@/services/providers.service";
 import { useQuery } from "@tanstack/react-query";
 import { useGeolocation } from "@/hooks/useGeolocation";
-import { formatLocationLabel, resolveKnownPakistaniCity } from "@/lib/location";
+import { formatLocationLabel, resolveCityForLocation } from "@/lib/location";
 import { toast } from "sonner";
 import {
   Search, Briefcase, Wrench, Megaphone, MapPin, ArrowRight, ShieldCheck, Users, Globe,
@@ -55,7 +55,7 @@ function Hero() {
     const r = await geo.request();
     if (r) {
       const label = formatLocationLabel(r);
-      setCity(resolveKnownPakistaniCity(r.city) || label);
+      setCity(resolveCityForLocation(r) || label);
       toast.success(`Current location: ${label}`);
     } else {
       toast.error("Location permission blocked or unavailable.");
