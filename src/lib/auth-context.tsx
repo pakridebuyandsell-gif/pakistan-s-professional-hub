@@ -8,7 +8,7 @@ import {
   updateProfile,
   type User,
 } from "firebase/auth";
-import { getFirebaseAuth, googleProvider } from "./firebase";
+import { getFirebaseAuth, requireFirebaseAuth, googleProvider, isFirebaseConfigured } from "./firebase";
 import type { AccountType } from "@/services/types";
 
 interface AuthContextValue {
