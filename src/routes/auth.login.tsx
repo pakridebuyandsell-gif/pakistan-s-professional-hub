@@ -34,13 +34,17 @@ function LoginPage() {
       toast.success("Welcome back!");
       nav({ to: "/dashboard" });
     } catch (err) {
+      console.error("[auth] email sign-in failed:", err);
       toast.error(friendlyAuthError(err));
     } finally { setBusy(false); }
   };
 
   const google = async () => {
     try { await signInGoogle(); nav({ to: "/dashboard" }); }
-    catch (err) { toast.error(friendlyAuthError(err)); }
+    catch (err) {
+      console.error("[auth] google sign-in failed:", err);
+      toast.error(friendlyAuthError(err));
+    }
   };
 
   return (
