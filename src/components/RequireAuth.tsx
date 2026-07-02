@@ -10,21 +10,16 @@ import { humanRole } from "@/lib/local-store";
 
 interface Props {
   children: ReactNode;
-  /** If provided, user must be logged in AND have this role. */
   requiredRole?: AccountType;
-  /** Human-readable action label, e.g. "post a job". */
   action?: string;
-  /** Where to send the user after login/signup. */
-  redirectTo?: string;
 }
 
 /**
  * Client-side gate. If the user isn't signed in, shows a friendly
  * login-or-create-account panel instead of the protected content.
- * If they're signed in with the wrong account type, explains why
- * they can't perform this action.
+ * If they're signed in with the wrong account type, explains why.
  */
-export function RequireAuth({ children, requiredRole, action = "continue", redirectTo }: Props) {
+export function RequireAuth({ children, requiredRole, action = "continue" }: Props) {
   const { user, loading, accountType } = useAuth();
 
   if (loading) {
@@ -50,17 +45,17 @@ export function RequireAuth({ children, requiredRole, action = "continue", redir
             </div>
             <h1 className="text-2xl font-bold">Login required</h1>
             <p className="mt-2 text-sm text-muted-foreground">
-              {action.charAt(0).toUpperCase() + action.slice(1)} karne ke liye pehle apna account
-              banayein ya login karein. Ek email par sirf ek hi account ban sakta hai.
+              {action.charAt(0).toUpperCase() + action.slice(1)} karne ke liye pehle apna
+              account banayein ya login karein. Ek email par sirf ek hi account ban sakta hai.
             </p>
 
             <div className="mt-6 grid gap-3 sm:grid-cols-2">
-              <Link to="/auth/register" search={redirectTo ? { redirect: redirectTo } as never : undefined}>
+              <Link to="/auth/register">
                 <Button className="w-full bg-[var(--brand-green)] hover:bg-[var(--brand-green-dark)] text-white">
                   Create Account
                 </Button>
               </Link>
-              <Link to="/auth/login" search={redirectTo ? { redirect: redirectTo } as never : undefined}>
+              <Link to="/auth/login">
                 <Button variant="outline" className="w-full">Login</Button>
               </Link>
             </div>
@@ -87,8 +82,8 @@ export function RequireAuth({ children, requiredRole, action = "continue", redir
             <p className="mt-2 text-sm text-muted-foreground">
               Aap ka account <b>{humanRole(accountType)}</b> ke tor par registered hai.
               {" "}{action} karne ke liye <b>{humanRole(requiredRole)}</b> account chahiye.
-              Ek email par sirf ek hi account ban sakta hai — dusra role banane ke liye alag
-              email use karein.
+              Ek email par sirf ek hi account ban sakta hai — dusra role banane ke liye
+              alag email use karein.
             </p>
             <div className="mt-6 flex justify-center gap-3">
               <Link to="/dashboard">
