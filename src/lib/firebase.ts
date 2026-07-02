@@ -3,7 +3,7 @@ import { getAuth, GoogleAuthProvider, type Auth } from "firebase/auth";
 
 // Firebase publishable config — safe to expose in client code.
 const firebaseConfig = {
-  apiKey: "AIzaSyDummyReplaceWithRealKey_worqgo",
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY ?? "",
   authDomain: "worqgo.firebaseapp.com",
   projectId: "worqgo",
   storageBucket: "worqgo.firebasestorage.app",

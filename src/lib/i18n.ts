@@ -52,7 +52,7 @@ if (!i18n.isInitialized) {
       lng: "en",
       supportedLngs: ["en", "ur"],
       react: { useSuspense: false },
-      initImmediate: false,
+      
       interpolation: { escapeValue: false },
       detection: { order: ["localStorage", "navigator"], caches: ["localStorage"] },
     });
