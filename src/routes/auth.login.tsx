@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { toast } from "sonner";
+import { friendlyAuthError } from "@/lib/auth-errors";
 import { Mail, Lock } from "lucide-react";
 
 export const Route = createFileRoute("/auth/login")({
