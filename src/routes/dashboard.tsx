@@ -16,7 +16,7 @@ import {
 import { PK_CITIES, JOB_CATEGORIES, SERVICE_CATEGORIES } from "@/services/mock";
 import type { Job, ServiceProvider } from "@/services/types";
 import { toast } from "sonner";
-import { ImageUploader } from "@/components/ImageUploader";
+import { ImagePlus, X } from "lucide-react";
 
 export const Route = createFileRoute("/dashboard")({
   head: () => ({
