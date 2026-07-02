@@ -68,7 +68,12 @@ function LoginPage() {
               </div>
             </label>
             <label className="block">
-              <span className="mb-1.5 block text-xs font-semibold">Password</span>
+              <div className="mb-1.5 flex items-center justify-between">
+                <span className="block text-xs font-semibold">Password</span>
+                <Link to="/auth/forgot-password" className="text-xs font-semibold text-[var(--brand-green)] hover:underline">
+                  Forgot password?
+                </Link>
+              </div>
               <div className="flex items-center gap-2 rounded-xl border border-input px-3">
                 <Lock className="h-4 w-4 text-muted-foreground" />
                 <input type="password" required value={password} onChange={(e) => setPassword(e.target.value)} className="w-full bg-transparent py-2.5 text-sm outline-none" />
@@ -77,6 +82,7 @@ function LoginPage() {
             <Button type="submit" disabled={busy} className="w-full bg-[var(--brand-green)] hover:bg-[var(--brand-green-dark)] text-white">
               {busy ? "Signing in…" : "Login"}
             </Button>
+
           </form>
 
           <p className="mt-4 text-center text-sm text-muted-foreground">
