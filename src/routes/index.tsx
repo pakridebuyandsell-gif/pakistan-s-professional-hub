@@ -259,6 +259,12 @@ function JobsMarketplace() {
 }
 
 function ServicesMarketplace() {
+  const { data, isLoading } = useQuery({
+    queryKey: ["providers", "home"],
+    queryFn: () => providersService.list({ limit: 4 }),
+    retry: 0,
+  });
+  const providers = data?.items ?? [];
   return (
     <section className="mx-auto max-w-7xl px-4 py-8">
       <div className="card-elevated p-5 md:p-8">
