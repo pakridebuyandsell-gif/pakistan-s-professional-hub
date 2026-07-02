@@ -9,38 +9,188 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
+import { Route as PostServiceRouteImport } from './routes/post-service'
+import { Route as PostJobRouteImport } from './routes/post-job'
+import { Route as FindServicesRouteImport } from './routes/find-services'
+import { Route as FindJobsRouteImport } from './routes/find-jobs'
+import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthRegisterRouteImport } from './routes/auth.register'
+import { Route as AuthLoginRouteImport } from './routes/auth.login'
 
+const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
+  id: '/sitemap.xml',
+  path: '/sitemap.xml',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PostServiceRoute = PostServiceRouteImport.update({
+  id: '/post-service',
+  path: '/post-service',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PostJobRoute = PostJobRouteImport.update({
+  id: '/post-job',
+  path: '/post-job',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FindServicesRoute = FindServicesRouteImport.update({
+  id: '/find-services',
+  path: '/find-services',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FindJobsRoute = FindJobsRouteImport.update({
+  id: '/find-jobs',
+  path: '/find-jobs',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DashboardRoute = DashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthRegisterRoute = AuthRegisterRouteImport.update({
+  id: '/auth/register',
+  path: '/auth/register',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthLoginRoute = AuthLoginRouteImport.update({
+  id: '/auth/login',
+  path: '/auth/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/dashboard': typeof DashboardRoute
+  '/find-jobs': typeof FindJobsRoute
+  '/find-services': typeof FindServicesRoute
+  '/post-job': typeof PostJobRoute
+  '/post-service': typeof PostServiceRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/auth/login': typeof AuthLoginRoute
+  '/auth/register': typeof AuthRegisterRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/dashboard': typeof DashboardRoute
+  '/find-jobs': typeof FindJobsRoute
+  '/find-services': typeof FindServicesRoute
+  '/post-job': typeof PostJobRoute
+  '/post-service': typeof PostServiceRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/auth/login': typeof AuthLoginRoute
+  '/auth/register': typeof AuthRegisterRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/dashboard': typeof DashboardRoute
+  '/find-jobs': typeof FindJobsRoute
+  '/find-services': typeof FindServicesRoute
+  '/post-job': typeof PostJobRoute
+  '/post-service': typeof PostServiceRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/auth/login': typeof AuthLoginRoute
+  '/auth/register': typeof AuthRegisterRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/dashboard'
+    | '/find-jobs'
+    | '/find-services'
+    | '/post-job'
+    | '/post-service'
+    | '/sitemap.xml'
+    | '/auth/login'
+    | '/auth/register'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/dashboard'
+    | '/find-jobs'
+    | '/find-services'
+    | '/post-job'
+    | '/post-service'
+    | '/sitemap.xml'
+    | '/auth/login'
+    | '/auth/register'
+  id:
+    | '__root__'
+    | '/'
+    | '/dashboard'
+    | '/find-jobs'
+    | '/find-services'
+    | '/post-job'
+    | '/post-service'
+    | '/sitemap.xml'
+    | '/auth/login'
+    | '/auth/register'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  DashboardRoute: typeof DashboardRoute
+  FindJobsRoute: typeof FindJobsRoute
+  FindServicesRoute: typeof FindServicesRoute
+  PostJobRoute: typeof PostJobRoute
+  PostServiceRoute: typeof PostServiceRoute
+  SitemapDotxmlRoute: typeof SitemapDotxmlRoute
+  AuthLoginRoute: typeof AuthLoginRoute
+  AuthRegisterRoute: typeof AuthRegisterRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/sitemap.xml': {
+      id: '/sitemap.xml'
+      path: '/sitemap.xml'
+      fullPath: '/sitemap.xml'
+      preLoaderRoute: typeof SitemapDotxmlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/post-service': {
+      id: '/post-service'
+      path: '/post-service'
+      fullPath: '/post-service'
+      preLoaderRoute: typeof PostServiceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/post-job': {
+      id: '/post-job'
+      path: '/post-job'
+      fullPath: '/post-job'
+      preLoaderRoute: typeof PostJobRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/find-services': {
+      id: '/find-services'
+      path: '/find-services'
+      fullPath: '/find-services'
+      preLoaderRoute: typeof FindServicesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/find-jobs': {
+      id: '/find-jobs'
+      path: '/find-jobs'
+      fullPath: '/find-jobs'
+      preLoaderRoute: typeof FindJobsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dashboard': {
+      id: '/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof DashboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -48,11 +198,33 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/auth/register': {
+      id: '/auth/register'
+      path: '/auth/register'
+      fullPath: '/auth/register'
+      preLoaderRoute: typeof AuthRegisterRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth/login': {
+      id: '/auth/login'
+      path: '/auth/login'
+      fullPath: '/auth/login'
+      preLoaderRoute: typeof AuthLoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  DashboardRoute: DashboardRoute,
+  FindJobsRoute: FindJobsRoute,
+  FindServicesRoute: FindServicesRoute,
+  PostJobRoute: PostJobRoute,
+  PostServiceRoute: PostServiceRoute,
+  SitemapDotxmlRoute: SitemapDotxmlRoute,
+  AuthLoginRoute: AuthLoginRoute,
+  AuthRegisterRoute: AuthRegisterRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
