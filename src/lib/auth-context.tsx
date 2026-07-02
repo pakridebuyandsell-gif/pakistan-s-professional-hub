@@ -8,7 +8,7 @@ import {
   updateProfile,
   type User,
 } from "firebase/auth";
-import { getFirebaseAuth, googleProvider } from "./firebase";
+import { getFirebaseAuth, requireFirebaseAuth, googleProvider } from "./firebase";
 import type { AccountType } from "@/services/types";
 
 interface AuthContextValue {
@@ -34,7 +34,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   });
 
   useEffect(() => {
-    const unsub = onAuthStateChanged(getFirebaseAuth(), (u) => {
+    const auth = getFirebaseAuth();
+    if (!auth) {
+      setLoading(false);
+      return;
+    }
+    const unsub = onAuthStateChanged(auth, (u) => {
       setUser(u);
       setLoading(false);
     });
@@ -49,19 +54,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const value: AuthContextValue = {
     user, loading, accountType,
     signInEmail: async (email, password) => {
-      await signInWithEmailAndPassword(getFirebaseAuth(), email, password);
+      await signInWithEmailAndPassword(requireFirebaseAuth(), email, password);
     },
     signUpEmail: async (email, password, fullName, t) => {
-      const cred = await createUserWithEmailAndPassword(getFirebaseAuth(), email, password);
+      const cred = await createUserWithEmailAndPassword(requireFirebaseAuth(), email, password);
       await updateProfile(cred.user, { displayName: fullName });
       setAccountType(t);
     },
     signInGoogle: async (t) => {
-      await signInWithPopup(getFirebaseAuth(), googleProvider);
+      await signInWithPopup(requireFirebaseAuth(), googleProvider);
       if (t) setAccountType(t);
     },
     logout: async () => {
-      await signOut(getFirebaseAuth());
+      const auth = getFirebaseAuth();
+      if (auth) await signOut(auth);
     },
     setAccountType,
   };
