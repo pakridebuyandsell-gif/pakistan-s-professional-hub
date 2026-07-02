@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { z } from "zod";
 import { ImageUploader, UploadingOverlay } from "@/components/ImageUploader";
 import { uploadsService } from "@/services/uploads.service";
+import { RequireAuth } from "@/components/RequireAuth";
 
 export const Route = createFileRoute("/post-job")({
   head: () => ({
@@ -21,8 +22,16 @@ export const Route = createFileRoute("/post-job")({
     ],
     links: [{ rel: "canonical", href: "/post-job" }],
   }),
-  component: PostJobPage,
+  component: PostJobGuarded,
 });
+
+function PostJobGuarded() {
+  return (
+    <RequireAuth requiredRole="employer" action="job post">
+      <PostJobPage />
+    </RequireAuth>
+  );
+}
 
 const STEPS = ["Job Details", "Requirements", "Salary & Benefits", "Review & Publish"];
 

@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { ImageUploader, UploadingOverlay } from "@/components/ImageUploader";
 import { uploadsService } from "@/services/uploads.service";
 import { z } from "zod";
+import { RequireAuth } from "@/components/RequireAuth";
 
 export const Route = createFileRoute("/post-service")({
   head: () => ({
@@ -21,8 +22,16 @@ export const Route = createFileRoute("/post-service")({
     ],
     links: [{ rel: "canonical", href: "/post-service" }],
   }),
-  component: PostServicePage,
+  component: PostServiceGuarded,
 });
+
+function PostServiceGuarded() {
+  return (
+    <RequireAuth requiredRole="service_provider" action="service post">
+      <PostServicePage />
+    </RequireAuth>
+  );
+}
 
 const STEPS = ["Service Details", "Pricing", "Gallery & Portfolio", "Review & Publish"];
 
