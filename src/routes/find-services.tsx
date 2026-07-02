@@ -8,6 +8,7 @@ import { Search, MapPin, Star, Phone, MessageCircle, Heart, LocateFixed, Loader2
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useGeolocation } from "@/hooks/useGeolocation";
+import { formatLocationLabel, resolveKnownPakistaniCity } from "@/lib/location";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/find-services")({
@@ -39,12 +40,12 @@ function FindServicesPage() {
 
   const useMyLocation = async () => {
     const r = await geo.request();
-    if (r?.city) {
-      const matched = PK_CITIES.find((c) => c.toLowerCase() === r.city!.toLowerCase());
-      setCity(matched ?? r.city);
-      toast.success(`Location set to ${matched ?? r.city}`);
-    } else if (geo.error) {
-      toast.error(geo.error);
+    if (r) {
+      const label = formatLocationLabel(r);
+      setCity(resolveKnownPakistaniCity(r.city) || label);
+      toast.success(`Current location: ${label}`);
+    } else {
+      toast.error("Location permission blocked or unavailable.");
     }
   };
 
@@ -73,6 +74,7 @@ function FindServicesPage() {
               <MapPin className="h-4 w-4 text-muted-foreground" />
               <select value={city} onChange={(e) => setCity(e.target.value)} className="w-full bg-transparent py-3 text-sm outline-none">
                 <option value="">All Pakistan</option>
+                {city && !PK_CITIES.includes(city) && <option value={city}>{city}</option>}
                 {PK_CITIES.map((c) => <option key={c}>{c}</option>)}
               </select>
               <button
@@ -86,6 +88,13 @@ function FindServicesPage() {
             </div>
             <Button className="bg-[var(--brand-orange)] hover:bg-[var(--brand-orange-dark)] text-white h-auto min-h-12">Search</Button>
           </div>
+
+          {(geo.data || geo.error) && (
+            <div className="mt-3 inline-flex items-center gap-2 rounded-lg bg-white/95 px-3 py-2 text-xs text-muted-foreground shadow-sm">
+              <MapPin className="h-3.5 w-3.5 text-[var(--brand-orange)]" />
+              {geo.data ? <>Current location: <span className="font-semibold text-foreground">{formatLocationLabel(geo.data)}</span></> : geo.error}
+            </div>
+          )}
 
           <div className="mt-4 flex flex-wrap gap-2 text-xs text-white/80">
             <span className="font-medium text-white/90">Popular:</span>

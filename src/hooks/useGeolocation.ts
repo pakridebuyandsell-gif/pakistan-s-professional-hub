@@ -21,11 +21,20 @@ async function reverseGeocode(lat: number, lng: number): Promise<Partial<GeoResu
     if (!res.ok) return {};
     const j = (await res.json()) as {
       display_name?: string;
-      address?: { city?: string; town?: string; village?: string; state?: string; country?: string };
+      address?: {
+        city?: string;
+        town?: string;
+        village?: string;
+        municipality?: string;
+        county?: string;
+        state_district?: string;
+        state?: string;
+        country?: string;
+      };
     };
     const a = j.address ?? {};
     return {
-      city: a.city ?? a.town ?? a.village ?? a.state,
+      city: a.city ?? a.town ?? a.village ?? a.municipality ?? a.county ?? a.state_district ?? a.state,
       country: a.country,
       displayName: j.display_name,
     };
@@ -66,7 +75,7 @@ export function useGeolocation() {
           setState({ loading: false, error: msg, data: null });
           resolve(null);
         },
-        { enableHighAccuracy: false, timeout: 10_000, maximumAge: 5 * 60_000 },
+        { enableHighAccuracy: true, timeout: 15_000, maximumAge: 5 * 60_000 },
       );
     });
   }, []);

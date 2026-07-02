@@ -34,16 +34,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   });
 
   useEffect(() => {
-    const auth = getFirebaseAuth();
-    if (!auth) {
-      setLoading(false);
-      return;
-    }
-    const unsub = onAuthStateChanged(auth, (u) => {
-      setUser(u);
-      setLoading(false);
+    let cancelled = false;
+    let unsub: (() => void) | undefined;
+
+    getFirebaseAuth().then((auth) => {
+      if (cancelled) return;
+      if (!auth) {
+        setLoading(false);
+        return;
+      }
+      unsub = onAuthStateChanged(auth, (u) => {
+        setUser(u);
+        setLoading(false);
+      });
     });
-    return () => unsub();
+
+    return () => {
+      cancelled = true;
+      unsub?.();
+    };
   }, []);
 
   const setAccountType = (t: AccountType) => {
@@ -54,19 +63,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const value: AuthContextValue = {
     user, loading, accountType,
     signInEmail: async (email, password) => {
-      await signInWithEmailAndPassword(requireFirebaseAuth(), email, password);
+      await signInWithEmailAndPassword(await requireFirebaseAuth(), email, password);
     },
     signUpEmail: async (email, password, fullName, t) => {
-      const cred = await createUserWithEmailAndPassword(requireFirebaseAuth(), email, password);
+      const cred = await createUserWithEmailAndPassword(await requireFirebaseAuth(), email, password);
       await updateProfile(cred.user, { displayName: fullName });
       setAccountType(t);
     },
     signInGoogle: async (t) => {
-      await signInWithPopup(requireFirebaseAuth(), googleProvider);
+      await signInWithPopup(await requireFirebaseAuth(), googleProvider);
       if (t) setAccountType(t);
     },
     logout: async () => {
-      const auth = getFirebaseAuth();
+      const auth = await getFirebaseAuth();
       if (auth) await signOut(auth);
     },
     setAccountType,

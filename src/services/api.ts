@@ -15,7 +15,7 @@ export class ApiError extends Error {
 
 async function authHeader(): Promise<Record<string, string>> {
   try {
-    const auth = getFirebaseAuth();
+    const auth = await getFirebaseAuth();
     const user = auth?.currentUser;
     if (!user) return {};
     const token = await user.getIdToken();

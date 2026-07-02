@@ -1,9 +1,9 @@
-import { initializeApp, getApps, type FirebaseApp } from "firebase/app";
+import { initializeApp, getApps, type FirebaseApp, type FirebaseOptions } from "firebase/app";
 import { getAuth, GoogleAuthProvider, type Auth } from "firebase/auth";
 
 // Firebase publishable config — safe to expose in client code.
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY ?? "",
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY ?? import.meta.env.VITE_GOOGLE_API_KEY ?? "",
   authDomain: "worqgo.firebaseapp.com",
   projectId: "worqgo",
   storageBucket: "worqgo.firebasestorage.app",
@@ -14,30 +14,54 @@ const firebaseConfig = {
 
 let _app: FirebaseApp | null = null;
 let _auth: Auth | null = null;
+let _configPromise: Promise<FirebaseOptions | null> | null = null;
 
-export const isFirebaseConfigured = Boolean(firebaseConfig.apiKey);
+function cleanApiKey(value: unknown) {
+  const key = typeof value === "string" ? value.trim() : "";
+  return key && !key.startsWith("@secret:") ? key : "";
+}
 
-export function getFirebaseApp(): FirebaseApp | null {
-  if (!isFirebaseConfigured) return null;
+async function loadFirebaseConfig(): Promise<FirebaseOptions | null> {
+  const apiKey = cleanApiKey(firebaseConfig.apiKey);
+  if (apiKey) return { ...firebaseConfig, apiKey };
+  if (typeof window === "undefined") return null;
+
+  if (!_configPromise) {
+    _configPromise = fetch("/api/public/firebase-config", { headers: { Accept: "application/json" } })
+      .then(async (res) => {
+        if (!res.ok) return null;
+        const config = (await res.json()) as FirebaseOptions;
+        const fetchedApiKey = cleanApiKey(config.apiKey);
+        return fetchedApiKey ? { ...config, apiKey: fetchedApiKey } : null;
+      })
+      .catch(() => null);
+  }
+  return _configPromise;
+}
+
+export const isFirebaseConfigured = Boolean(cleanApiKey(firebaseConfig.apiKey));
+
+export async function getFirebaseApp(): Promise<FirebaseApp | null> {
   if (_app) return _app;
-  _app = getApps()[0] ?? initializeApp(firebaseConfig);
+  const config = await loadFirebaseConfig();
+  if (!config) return null;
+  _app = getApps()[0] ?? initializeApp(config);
   return _app;
 }
 
-export function getFirebaseAuth(): Auth | null {
-  if (!isFirebaseConfigured) return null;
+export async function getFirebaseAuth(): Promise<Auth | null> {
   if (_auth) return _auth;
-  const app = getFirebaseApp();
+  const app = await getFirebaseApp();
   if (!app) return null;
   _auth = getAuth(app);
   return _auth;
 }
 
-export function requireFirebaseAuth(): Auth {
-  const auth = getFirebaseAuth();
+export async function requireFirebaseAuth(): Promise<Auth> {
+  const auth = await getFirebaseAuth();
   if (!auth) {
     throw new Error(
-      "Firebase is not configured. Add VITE_FIREBASE_API_KEY to your .env file (get it from Firebase Console → Project Settings → General → Your apps → Web app → apiKey)."
+      "Firebase is not configured. The GOOGLE_API_KEY secret or VITE_FIREBASE_API_KEY value is missing."
     );
   }
   return auth;

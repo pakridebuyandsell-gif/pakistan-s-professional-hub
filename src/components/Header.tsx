@@ -5,18 +5,33 @@ import { useAuth } from "@/lib/auth-context";
 import { Button } from "@/components/ui/button";
 import { MapPin, Bell, MessageCircle, Menu, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
+import { useGeolocation } from "@/hooks/useGeolocation";
+import { formatLocationLabel } from "@/lib/location";
 
 const NAV = [
-  { to: "/find-jobs", key: "findJobs" as const },
-  { to: "/post-job", key: "postJob" as const },
-  { to: "/find-services", key: "findServices" as const },
-  { to: "/post-service", key: "postService" as const },
+  { to: "/find-jobs", key: "findJobs" as const, label: "Find Jobs" },
+  { to: "/post-job", key: "postJob" as const, label: "Post Job" },
+  { to: "/find-services", key: "findServices" as const, label: "Find Services" },
+  { to: "/post-service", key: "postService" as const, label: "Post Service" },
 ];
 
 export function Header() {
   const { user, logout } = useAuth();
   const { t, i18n } = useTranslation();
   const [open, setOpen] = useState(false);
+  const geo = useGeolocation();
+
+  const navText = (item: (typeof NAV)[number]) => {
+    const translated = t(`nav.${item.key}`);
+    return translated === `nav.${item.key}` ? item.label : translated;
+  };
+
+  const useMyLocation = async () => {
+    const result = await geo.request();
+    if (result) toast.success(`Current location: ${formatLocationLabel(result)}`);
+    else toast.error("Location permission blocked or unavailable.");
+  };
 
   return (
     <header className="sticky top-0 z-40 border-b border-border/60 bg-background/80 backdrop-blur-md">
@@ -31,18 +46,20 @@ export function Header() {
               className="rounded-md px-3 py-2 text-sm font-medium text-foreground/70 transition-colors hover:bg-accent hover:text-accent-foreground"
               activeProps={{ className: "text-primary font-semibold bg-accent/60" }}
             >
-              {t(`nav.${item.key}`)}
+              {navText(item)}
             </Link>
           ))}
         </nav>
 
         <div className="flex items-center gap-2">
           <button
+            type="button"
+            onClick={useMyLocation}
             className="hidden items-center gap-1 rounded-md border border-border px-2.5 py-1.5 text-xs font-medium text-muted-foreground hover:bg-muted md:inline-flex"
-            aria-label="Location"
+            aria-label="Use current location"
           >
             <MapPin className="h-3.5 w-3.5" />
-            PK
+            <span className="max-w-24 truncate">{geo.loading ? "Locating…" : formatLocationLabel(geo.data) || "PK"}</span>
           </button>
           <button
             onClick={() => i18n.changeLanguage(i18n.language === "en" ? "ur" : "en")}
@@ -95,7 +112,7 @@ export function Header() {
                 onClick={() => setOpen(false)}
                 className="rounded-md px-3 py-2 text-sm font-medium hover:bg-accent"
               >
-                {t(`nav.${item.key}`)}
+                {navText(item)}
               </Link>
             ))}
             <div className="mt-2 flex gap-2 border-t border-border pt-3">
