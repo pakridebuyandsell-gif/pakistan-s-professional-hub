@@ -30,10 +30,8 @@ function ForgotPasswordPage() {
     setBusy(true);
     try {
       const auth = await requireFirebaseAuth();
-      await sendPasswordResetEmail(auth, email.trim(), {
-        url: `${window.location.origin}/auth/login`,
-        handleCodeInApp: false,
-      });
+      await sendPasswordResetEmail(auth, email.trim());
+
       setSent(true);
       toast.success("Password reset link bhej diya gaya hai.");
     } catch (err) {
