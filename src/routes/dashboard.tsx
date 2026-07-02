@@ -393,7 +393,7 @@ function ProfileEditor({ uid, email, displayName, role }: { uid: string; email: 
       </Field>
 
       <Field label="Avatar / Logo (1 image)">
-        <ImageUploader max={1} value={p.avatarUrl ? [p.avatarUrl] : []} onChange={(urls) => setP({ ...p, avatarUrl: urls[0] })} />
+        <UrlUploader max={1} value={p.avatarUrl ? [p.avatarUrl] : []} onChange={(urls) => setP({ ...p, avatarUrl: urls[0] })} />
       </Field>
 
       <style>{globalInputCss}</style>
@@ -462,7 +462,7 @@ function JobEditor({ uid, initial, onSaved }: { uid: string; initial: Job | null
       </div>
 
       <Field label="Company Logo (1 image)">
-        <ImageUploader max={1} value={logoUrls} onChange={setLogoUrls} />
+        <UrlUploader max={1} value={logoUrls} onChange={setLogoUrls} />
       </Field>
 
       <style>{globalInputCss}</style>
@@ -558,7 +558,7 @@ function ServiceEditor({ uid, initial, onSaved }: { uid: string; initial: Servic
       </Field>
 
       <Field label="Profile Photo (1 image)">
-        <ImageUploader max={1} value={avatars} onChange={setAvatars} />
+        <UrlUploader max={1} value={avatars} onChange={setAvatars} />
       </Field>
 
       <style>{globalInputCss}</style>
@@ -611,7 +611,7 @@ function PortfolioEditor({ uid }: { uid: string }) {
     <div className="card-elevated p-6 space-y-3">
       <h2 className="text-xl font-bold">Portfolio (max 4 photos)</h2>
       <p className="text-sm text-muted-foreground">Apne kaam ki photos add karein — yeh customers ko dikhengi.</p>
-      <ImageUploader max={4} value={urls} onChange={save} />
+      <UrlUploader max={4} value={urls} onChange={save} />
     </div>
   );
 }
