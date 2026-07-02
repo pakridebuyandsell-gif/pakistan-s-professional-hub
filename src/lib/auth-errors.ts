@@ -52,5 +52,8 @@ export function friendlyAuthError(err: unknown): string {
   if (err instanceof Error && !err.message.toLowerCase().startsWith("firebase:")) {
     return err.message;
   }
-  return "Sign-in mein masla aa gaya. Dobara try karein.";
+  // Unknown — include the raw code so we can diagnose instead of a blind fallback.
+  const shown = raw.replace(/^Firebase:\s*/i, "").trim();
+  return shown ? `Sign-in mein masla: ${shown}` : "Sign-in mein masla aa gaya. Dobara try karein.";
 }
+
