@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { toast } from "sonner";
+import { friendlyAuthError } from "@/lib/auth-errors";
 import { Mail, Lock } from "lucide-react";
 
 export const Route = createFileRoute("/auth/login")({
@@ -33,13 +34,13 @@ function LoginPage() {
       toast.success("Welcome back!");
       nav({ to: "/dashboard" });
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Login failed");
+      toast.error(friendlyAuthError(err));
     } finally { setBusy(false); }
   };
 
   const google = async () => {
     try { await signInGoogle(); nav({ to: "/dashboard" }); }
-    catch (err) { toast.error(err instanceof Error ? err.message : "Google sign-in failed"); }
+    catch (err) { toast.error(friendlyAuthError(err)); }
   };
 
   return (

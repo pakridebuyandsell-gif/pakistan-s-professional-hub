@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { toast } from "sonner";
+import { friendlyAuthError } from "@/lib/auth-errors";
 import { Briefcase, Search, Wrench, User as UserIcon, CheckCircle2 } from "lucide-react";
 import type { AccountType } from "@/services/types";
 import { PK_CITIES } from "@/services/mock";
@@ -48,14 +49,14 @@ function RegisterPage() {
       toast.success("Account created!");
       nav({ to: "/dashboard" });
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Sign up failed");
+      toast.error(friendlyAuthError(err));
     } finally { setBusy(false); }
   };
 
   const google = async () => {
-    if (!accountType) { toast.error("Pick an account type first"); return; }
+    if (!accountType) { toast.error("Pehle account type select karein."); return; }
     try { await signInGoogle(accountType); nav({ to: "/dashboard" }); }
-    catch (err) { toast.error(err instanceof Error ? err.message : "Google sign-up failed"); }
+    catch (err) { toast.error(friendlyAuthError(err)); }
   };
 
   return (
