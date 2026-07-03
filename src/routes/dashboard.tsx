@@ -410,7 +410,13 @@ function ProfileEditor({ uid, email, displayName, role }: { uid: string; email: 
       </Field>
 
       <Field label="Avatar / Logo (1 image)">
-        <UrlUploader max={1} value={p.avatarUrl ? [p.avatarUrl] : []} onChange={(urls: string[]) => setP({ ...p, avatarUrl: urls[0] })} />
+        <CloudUploader
+          account="jobs"
+          folder="worqgo/profiles"
+          max={1}
+          value={p.avatarUrl ? [{ url: p.avatarUrl, publicId: p.avatarPublicId ?? "", account: "jobs" }] : []}
+          onChange={(a) => setP({ ...p, avatarUrl: a[0]?.url, avatarPublicId: a[0]?.publicId })}
+        />
       </Field>
 
       <style>{globalInputCss}</style>
@@ -435,11 +441,18 @@ function JobEditor({ uid, initial, onSaved }: { uid: string; initial: Job | null
     isNew: true,
     verified: false,
   });
-  const [logoUrls, setLogoUrls] = useState<string[]>(initial?.companyLogo ? [initial.companyLogo] : []);
+  const [logoAssets, setLogoAssets] = useState<MediaAsset[]>(
+    initial?.mediaAssets?.length ? initial.mediaAssets : (initial?.companyLogo ? [{ url: initial.companyLogo, publicId: "", account: "jobs" }] : [])
+  );
 
   const save = (e: React.FormEvent) => {
     e.preventDefault();
-    const merged: Job = { ...job, companyLogo: logoUrls[0], postedAt: initial?.postedAt ?? new Date().toISOString() };
+    const merged: Job = {
+      ...job,
+      companyLogo: logoAssets[0]?.url,
+      mediaAssets: logoAssets,
+      postedAt: initial?.postedAt ?? new Date().toISOString(),
+    };
     saveMyJob(uid, merged);
     toast.success(initial ? "Job updated" : "Job posted");
     onSaved();
