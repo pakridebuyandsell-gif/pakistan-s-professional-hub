@@ -660,45 +660,73 @@ function Select({ value, onChange, children, required }: { value: string; onChan
 
 const globalInputCss = `.input{width:100%;border:1px solid var(--color-input);background:white;border-radius:var(--radius-md);padding:0.65rem 0.75rem;font-size:0.875rem;outline:none}.input:focus{border-color:var(--brand-green);box-shadow:0 0 0 3px oklch(0.58 0.18 145 / 0.15)}.input:disabled{background:hsl(var(--muted));color:hsl(var(--muted-foreground))}`;
 
-// URL-based image uploader: reads picked files as data URLs so the parent can
-// store them as strings (the local-store fallback until backend uploads land).
-function UrlUploader({ value, onChange, max = 4 }: { value: string[]; onChange: (urls: string[]) => void; max?: number }) {
-  const readAsDataURL = (file: File) =>
-    new Promise<string>((resolve, reject) => {
-      const r = new FileReader();
-      r.onload = () => resolve(String(r.result));
-      r.onerror = reject;
-      r.readAsDataURL(file);
-    });
+// Real Cloudinary uploader. Uploads to the selected account on file pick,
+// and deletes the asset from Cloudinary when the user removes a preview.
+function CloudUploader({
+  value,
+  onChange,
+  account,
+  folder,
+  max = 4,
+}: {
+  value: MediaAsset[];
+  onChange: (assets: MediaAsset[]) => void;
+  account: CloudinaryAccount;
+  folder?: string;
+  max?: number;
+}) {
+  const [busy, setBusy] = useState(false);
 
   const pick = async (files: FileList | null) => {
     if (!files) return;
     const remaining = max - value.length;
     if (remaining <= 0) { toast.error(`Max ${max} images`); return; }
-    const chosen = Array.from(files).slice(0, remaining);
-    const urls: string[] = [];
-    for (const f of chosen) {
-      if (!f.type.startsWith("image/")) { toast.error(`${f.name}: not an image`); continue; }
-      if (f.size > 2 * 1024 * 1024) { toast.error(`${f.name}: over 2MB`); continue; }
-      urls.push(await readAsDataURL(f));
+    const chosen = Array.from(files).slice(0, remaining).filter((f) => {
+      if (!f.type.startsWith("image/")) { toast.error(`${f.name}: not an image`); return false; }
+      if (f.size > 2 * 1024 * 1024) { toast.error(`${f.name}: over 2MB`); return false; }
+      return true;
+    });
+    if (!chosen.length) return;
+    setBusy(true);
+    try {
+      const uploader = account === "services" ? uploadsService.uploadServiceImage : uploadsService.uploadJobImage;
+      const results: MediaAsset[] = [];
+      for (const f of chosen) {
+        const r = await uploader(f, folder);
+        results.push({ url: r.url, publicId: r.publicId, account: r.account });
+      }
+      onChange([...value, ...results]);
+    } catch (err) {
+      console.error(err);
+      toast.error("Image upload failed");
+    } finally {
+      setBusy(false);
     }
-    if (urls.length) onChange([...value, ...urls]);
+  };
+
+  const remove = async (idx: number) => {
+    const asset = value[idx];
+    onChange(value.filter((_, j) => j !== idx));
+    if (asset?.publicId) {
+      const res = await uploadsService.deleteAsset(asset.publicId, asset.account);
+      if (!res.ok) toast.warning("Image removed from post but Cloudinary cleanup failed");
+    }
   };
 
   return (
     <div>
-      <label className="flex cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed border-border p-6 text-center hover:border-[var(--brand-orange)]/60">
-        <ImagePlus className="h-6 w-6 text-muted-foreground" />
-        <span className="text-sm font-medium">Upload image{max > 1 ? "s" : ""}</span>
+      <label className={`flex cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed border-border p-6 text-center hover:border-[var(--brand-orange)]/60 ${busy ? "opacity-60 pointer-events-none" : ""}`}>
+        {busy ? <Loader2 className="h-6 w-6 animate-spin text-[var(--brand-green)]" /> : <ImagePlus className="h-6 w-6 text-muted-foreground" />}
+        <span className="text-sm font-medium">{busy ? "Uploading…" : `Upload image${max > 1 ? "s" : ""}`}</span>
         <span className="text-xs text-muted-foreground">Up to {max} · JPG/PNG/WEBP · max 2MB each</span>
-        <input type="file" multiple={max > 1} accept="image/*" className="hidden" onChange={(e) => pick(e.target.files)} />
+        <input type="file" multiple={max > 1} accept="image/*" className="hidden" disabled={busy} onChange={(e) => { pick(e.target.files); e.target.value = ""; }} />
       </label>
       {value.length > 0 && (
         <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
-          {value.map((url, i) => (
-            <div key={i} className="group relative aspect-square overflow-hidden rounded-lg border border-border bg-muted">
-              <img src={url} alt="" className="h-full w-full object-cover" />
-              <button type="button" onClick={() => onChange(value.filter((_, j) => j !== i))}
+          {value.map((asset, i) => (
+            <div key={asset.publicId + i} className="group relative aspect-square overflow-hidden rounded-lg border border-border bg-muted">
+              <img src={asset.url} alt="" className="h-full w-full object-cover" />
+              <button type="button" onClick={() => remove(i)}
                 className="absolute right-1 top-1 rounded-full bg-black/70 p-1 text-white opacity-0 group-hover:opacity-100" aria-label="Remove">
                 <X className="h-3 w-3" />
               </button>
