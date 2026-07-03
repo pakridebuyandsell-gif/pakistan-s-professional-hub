@@ -487,7 +487,7 @@ function JobEditor({ uid, initial, onSaved }: { uid: string; initial: Job | null
   );
 }
 
-function MyJobs({ jobs, onEdit, onDelete, onNew }: { jobs: Job[]; onEdit: (j: Job) => void; onDelete: (id: string) => void; onNew: () => void }) {
+function MyJobs({ jobs, onEdit, onDelete, onNew }: { jobs: Job[]; onEdit: (j: Job) => void; onDelete: (id: string) => void | Promise<void>; onNew: () => void }) {
   return (
     <div className="card-elevated p-6">
       <div className="mb-4 flex items-center justify-between">
@@ -583,7 +583,7 @@ function ServiceEditor({ uid, initial, onSaved }: { uid: string; initial: Servic
   );
 }
 
-function MyServices({ services, onEdit, onDelete, onNew }: { services: ServiceProvider[]; onEdit: (s: ServiceProvider) => void; onDelete: (id: string) => void; onNew: () => void }) {
+function MyServices({ services, onEdit, onDelete, onNew }: { services: ServiceProvider[]; onEdit: (s: ServiceProvider) => void; onDelete: (id: string) => void | Promise<void>; onNew: () => void }) {
   return (
     <div className="card-elevated p-6">
       <div className="mb-4 flex items-center justify-between">
