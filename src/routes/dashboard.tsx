@@ -109,7 +109,15 @@ function EmployerDashboard({ uid, email, displayName, onLogout }: { uid: string;
           <MyJobs
             jobs={jobs}
             onEdit={(j) => { setEditingJob(j); setTab("post"); }}
-            onDelete={(id) => { deleteMyJob(uid, id); refreshJobs(); toast.success("Job deleted"); }}
+            onDelete={async (id) => {
+              const job = jobs.find((j) => j.id === id);
+              if (job?.mediaAssets?.length) {
+                await uploadsService.deleteAssets(job.mediaAssets.map((m) => ({ publicId: m.publicId, account: m.account })));
+              }
+              deleteMyJob(uid, id);
+              refreshJobs();
+              toast.success("Job deleted (media removed from Cloudinary)");
+            }}
             onNew={() => { setEditingJob(null); setTab("post"); }}
           />
         )}
