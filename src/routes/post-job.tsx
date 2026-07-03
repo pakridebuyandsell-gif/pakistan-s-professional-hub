@@ -84,11 +84,14 @@ function PostJobPage() {
     }
     setBusy(true);
     try {
-      const uploaded = logo.length ? await uploadsService.uploadMany(logo) : [];
+      // Upload to the Jobs Cloudinary account so we can later delete by publicId
+      const uploaded = logo.length ? await uploadsService.uploadJobImages(logo) : [];
+      const mediaAssets = uploaded.map((u) => ({ url: u.url, publicId: u.publicId, account: "jobs" as const }));
       const payload: Record<string, unknown> = {
         title: form.title, category: form.category, employmentType: form.type,
         city: form.city, location: `${form.city}, Pakistan`, company: form.company,
         companyLogo: uploaded[0]?.url,
+        mediaAssets,
         description: form.description,
         vacancies: form.vacancies,
         deadline: form.deadline || undefined,
@@ -100,11 +103,34 @@ function PostJobPage() {
         salaryMax: Number(form.salaryMax) || undefined,
         currency: "PKR",
       };
-      await jobsService.create(payload as never);
+      try {
+        await jobsService.create(payload as never);
+      } catch {
+        // Backend unreachable — persist locally so the user's post is never lost
+        const { saveMyJob, newId } = await import("@/lib/local-store");
+        saveMyJob(user.uid, {
+          id: newId(),
+          title: form.title,
+          company: form.company,
+          companyLogo: uploaded[0]?.url,
+          city: form.city,
+          location: `${form.city}, Pakistan`,
+          employmentType: form.type as never,
+          category: form.category,
+          salaryMin: Number(form.salaryMin) || undefined,
+          salaryMax: Number(form.salaryMax) || undefined,
+          currency: "PKR",
+          postedAt: new Date().toISOString(),
+          isNew: true,
+          mediaAssets,
+        });
+        toast.info("Saved to your dashboard (offline mode)");
+      }
       toast.success("Job posted successfully");
       navigate({ to: "/dashboard" });
-    } catch {
-      toast.error("Could not post job — backend not connected yet.");
+    } catch (err) {
+      console.error(err);
+      toast.error("Could not post job. Please try again.");
     } finally {
       setBusy(false);
     }

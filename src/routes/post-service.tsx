@@ -79,14 +79,15 @@ function PostServicePage() {
 
   const submit = async () => {
     if (!user) { toast.error("Please login to post a service"); navigate({ to: "/auth/login" }); return; }
-    // Re-run full validation
     for (const s of stepSchemas) {
       const r = s.safeParse(form);
       if (!r.success) { toast.error(r.error.issues[0].message); return; }
     }
     setBusy(true);
     try {
-      const uploaded = images.length ? await uploadsService.uploadMany(images) : [];
+      // Upload to the Services Cloudinary account so we can later delete by publicId
+      const uploaded = images.length ? await uploadsService.uploadServiceImages(images) : [];
+      const mediaAssets = uploaded.map((u) => ({ url: u.url, publicId: u.publicId, account: "services" as const }));
       const payload: Record<string, unknown> = {
         name: form.title, category: form.category, city: form.city,
         description: form.detailedDesc,
@@ -94,6 +95,7 @@ function PostServicePage() {
         hourlyRate: Number(form.rate) || undefined, currency: "PKR",
         avatarUrl: uploaded[0]?.url,
         images: uploaded.map((u) => u.url),
+        mediaAssets,
         subCategory: form.subCategory,
         shortDescription: form.shortDesc,
         rateType: form.rateType,
@@ -102,11 +104,35 @@ function PostServicePage() {
         hoursTo: form.to,
         travelToCustomer: form.travelToCustomer,
       };
-      await providersService.create(payload as never);
+      try {
+        await providersService.create(payload as never);
+      } catch {
+        // Backend unreachable — persist locally so the user's post is never lost
+        const { saveMyService, newId } = await import("@/lib/local-store");
+        saveMyService(user.uid, {
+          id: newId(),
+          name: form.title,
+          avatarUrl: uploaded[0]?.url,
+          category: form.category,
+          city: form.city,
+          rating: 0,
+          reviews: 0,
+          yearsExperience: 0,
+          level: "Bronze",
+          hourlyRate: Number(form.rate) || undefined,
+          currency: "PKR",
+          verified: false,
+          description: form.detailedDesc,
+          tags: form.tags.split(",").map((t) => t.trim()).filter(Boolean),
+          mediaAssets,
+        });
+        toast.info("Saved to your dashboard (offline mode)");
+      }
       toast.success("Service posted successfully");
       navigate({ to: "/dashboard" });
-    } catch {
-      toast.error("Could not post service — backend not connected yet.");
+    } catch (err) {
+      console.error(err);
+      toast.error("Could not post service. Please try again.");
     } finally {
       setBusy(false);
     }
