@@ -67,6 +67,7 @@ export interface LocalProfile {
   address?: string;
   bio?: string;
   avatarUrl?: string;
+  avatarPublicId?: string;
   companyName?: string;
   companyWebsite?: string;
   category?: string;

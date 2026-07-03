@@ -14,9 +14,10 @@ import {
   type LocalProfile,
 } from "@/lib/local-store";
 import { PK_CITIES, JOB_CATEGORIES, SERVICE_CATEGORIES } from "@/services/mock";
-import type { Job, ServiceProvider } from "@/services/types";
+import type { Job, ServiceProvider, MediaAsset } from "@/services/types";
+import { uploadsService, type CloudinaryAccount } from "@/services/uploads.service";
 import { toast } from "sonner";
-import { ImagePlus, X } from "lucide-react";
+import { ImagePlus, X, Loader2 } from "lucide-react";
 
 export const Route = createFileRoute("/dashboard")({
   head: () => ({
@@ -108,7 +109,15 @@ function EmployerDashboard({ uid, email, displayName, onLogout }: { uid: string;
           <MyJobs
             jobs={jobs}
             onEdit={(j) => { setEditingJob(j); setTab("post"); }}
-            onDelete={(id) => { deleteMyJob(uid, id); refreshJobs(); toast.success("Job deleted"); }}
+            onDelete={async (id) => {
+              const job = jobs.find((j) => j.id === id);
+              if (job?.mediaAssets?.length) {
+                await uploadsService.deleteAssets(job.mediaAssets.map((m) => ({ publicId: m.publicId, account: m.account })));
+              }
+              deleteMyJob(uid, id);
+              refreshJobs();
+              toast.success("Job deleted (media removed from Cloudinary)");
+            }}
             onNew={() => { setEditingJob(null); setTab("post"); }}
           />
         )}
@@ -176,7 +185,15 @@ function ProviderDashboard({ uid, email, displayName, onLogout }: { uid: string;
           <MyServices
             services={services}
             onEdit={(s) => { setEditingService(s); setTab("post"); }}
-            onDelete={(id) => { deleteMyService(uid, id); refreshServices(); toast.success("Service deleted"); }}
+            onDelete={async (id) => {
+              const svc = services.find((s) => s.id === id);
+              if (svc?.mediaAssets?.length) {
+                await uploadsService.deleteAssets(svc.mediaAssets.map((m) => ({ publicId: m.publicId, account: m.account })));
+              }
+              deleteMyService(uid, id);
+              refreshServices();
+              toast.success("Service deleted (media removed from Cloudinary)");
+            }}
             onNew={() => { setEditingService(null); setTab("post"); }}
           />
         )}
@@ -393,7 +410,13 @@ function ProfileEditor({ uid, email, displayName, role }: { uid: string; email: 
       </Field>
 
       <Field label="Avatar / Logo (1 image)">
-        <UrlUploader max={1} value={p.avatarUrl ? [p.avatarUrl] : []} onChange={(urls: string[]) => setP({ ...p, avatarUrl: urls[0] })} />
+        <CloudUploader
+          account="jobs"
+          folder="worqgo/profiles"
+          max={1}
+          value={p.avatarUrl ? [{ url: p.avatarUrl, publicId: p.avatarPublicId ?? "", account: "jobs" }] : []}
+          onChange={(a) => setP({ ...p, avatarUrl: a[0]?.url, avatarPublicId: a[0]?.publicId })}
+        />
       </Field>
 
       <style>{globalInputCss}</style>
@@ -418,11 +441,18 @@ function JobEditor({ uid, initial, onSaved }: { uid: string; initial: Job | null
     isNew: true,
     verified: false,
   });
-  const [logoUrls, setLogoUrls] = useState<string[]>(initial?.companyLogo ? [initial.companyLogo] : []);
+  const [logoAssets, setLogoAssets] = useState<MediaAsset[]>(
+    initial?.mediaAssets?.length ? initial.mediaAssets : (initial?.companyLogo ? [{ url: initial.companyLogo, publicId: "", account: "jobs" }] : [])
+  );
 
   const save = (e: React.FormEvent) => {
     e.preventDefault();
-    const merged: Job = { ...job, companyLogo: logoUrls[0], postedAt: initial?.postedAt ?? new Date().toISOString() };
+    const merged: Job = {
+      ...job,
+      companyLogo: logoAssets[0]?.url,
+      mediaAssets: logoAssets,
+      postedAt: initial?.postedAt ?? new Date().toISOString(),
+    };
     saveMyJob(uid, merged);
     toast.success(initial ? "Job updated" : "Job posted");
     onSaved();
@@ -462,7 +492,7 @@ function JobEditor({ uid, initial, onSaved }: { uid: string; initial: Job | null
       </div>
 
       <Field label="Company Logo (1 image)">
-        <UrlUploader max={1} value={logoUrls} onChange={setLogoUrls} />
+        <CloudUploader account="jobs" folder="worqgo/jobs" max={1} value={logoAssets} onChange={setLogoAssets} />
       </Field>
 
       <style>{globalInputCss}</style>
@@ -470,7 +500,7 @@ function JobEditor({ uid, initial, onSaved }: { uid: string; initial: Job | null
   );
 }
 
-function MyJobs({ jobs, onEdit, onDelete, onNew }: { jobs: Job[]; onEdit: (j: Job) => void; onDelete: (id: string) => void; onNew: () => void }) {
+function MyJobs({ jobs, onEdit, onDelete, onNew }: { jobs: Job[]; onEdit: (j: Job) => void; onDelete: (id: string) => void | Promise<void>; onNew: () => void }) {
   return (
     <div className="card-elevated p-6">
       <div className="mb-4 flex items-center justify-between">
@@ -516,11 +546,13 @@ function ServiceEditor({ uid, initial, onSaved }: { uid: string; initial: Servic
     description: "",
     tags: [],
   });
-  const [avatars, setAvatars] = useState<string[]>(initial?.avatarUrl ? [initial.avatarUrl] : []);
+  const [avatarAssets, setAvatarAssets] = useState<MediaAsset[]>(
+    initial?.mediaAssets?.length ? initial.mediaAssets : (initial?.avatarUrl ? [{ url: initial.avatarUrl, publicId: "", account: "services" }] : [])
+  );
 
   const save = (e: React.FormEvent) => {
     e.preventDefault();
-    saveMyService(uid, { ...s, avatarUrl: avatars[0] });
+    saveMyService(uid, { ...s, avatarUrl: avatarAssets[0]?.url, mediaAssets: avatarAssets });
     toast.success(initial ? "Service updated" : "Service posted");
     onSaved();
   };
@@ -558,7 +590,7 @@ function ServiceEditor({ uid, initial, onSaved }: { uid: string; initial: Servic
       </Field>
 
       <Field label="Profile Photo (1 image)">
-        <UrlUploader max={1} value={avatars} onChange={setAvatars} />
+        <CloudUploader account="services" folder="worqgo/services" max={1} value={avatarAssets} onChange={setAvatarAssets} />
       </Field>
 
       <style>{globalInputCss}</style>
@@ -566,7 +598,7 @@ function ServiceEditor({ uid, initial, onSaved }: { uid: string; initial: Servic
   );
 }
 
-function MyServices({ services, onEdit, onDelete, onNew }: { services: ServiceProvider[]; onEdit: (s: ServiceProvider) => void; onDelete: (id: string) => void; onNew: () => void }) {
+function MyServices({ services, onEdit, onDelete, onNew }: { services: ServiceProvider[]; onEdit: (s: ServiceProvider) => void; onDelete: (id: string) => void | Promise<void>; onNew: () => void }) {
   return (
     <div className="card-elevated p-6">
       <div className="mb-4 flex items-center justify-between">
@@ -600,18 +632,25 @@ function MyServices({ services, onEdit, onDelete, onNew }: { services: ServicePr
 
 function PortfolioEditor({ uid }: { uid: string }) {
   const key = `worqgo:portfolio:${uid}`;
-  const [urls, setUrls] = useState<string[]>(() => {
-    try { return JSON.parse(localStorage.getItem(key) ?? "[]"); } catch { return []; }
+  // Migrate legacy string[] URLs (data: or http) to MediaAsset[]
+  const [assets, setAssets] = useState<MediaAsset[]>(() => {
+    try {
+      const raw = JSON.parse(localStorage.getItem(key) ?? "[]");
+      if (Array.isArray(raw) && raw.length && typeof raw[0] === "string") {
+        return (raw as string[]).map((url) => ({ url, publicId: "", account: "services" as const }));
+      }
+      return raw as MediaAsset[];
+    } catch { return []; }
   });
-  const save = (next: string[]) => {
-    setUrls(next);
+  const save = (next: MediaAsset[]) => {
+    setAssets(next);
     localStorage.setItem(key, JSON.stringify(next));
   };
   return (
     <div className="card-elevated p-6 space-y-3">
       <h2 className="text-xl font-bold">Portfolio (max 4 photos)</h2>
       <p className="text-sm text-muted-foreground">Apne kaam ki photos add karein — yeh customers ko dikhengi.</p>
-      <UrlUploader max={4} value={urls} onChange={save} />
+      <CloudUploader account="services" folder="worqgo/portfolio" max={4} value={assets} onChange={save} />
     </div>
   );
 }
@@ -643,45 +682,73 @@ function Select({ value, onChange, children, required }: { value: string; onChan
 
 const globalInputCss = `.input{width:100%;border:1px solid var(--color-input);background:white;border-radius:var(--radius-md);padding:0.65rem 0.75rem;font-size:0.875rem;outline:none}.input:focus{border-color:var(--brand-green);box-shadow:0 0 0 3px oklch(0.58 0.18 145 / 0.15)}.input:disabled{background:hsl(var(--muted));color:hsl(var(--muted-foreground))}`;
 
-// URL-based image uploader: reads picked files as data URLs so the parent can
-// store them as strings (the local-store fallback until backend uploads land).
-function UrlUploader({ value, onChange, max = 4 }: { value: string[]; onChange: (urls: string[]) => void; max?: number }) {
-  const readAsDataURL = (file: File) =>
-    new Promise<string>((resolve, reject) => {
-      const r = new FileReader();
-      r.onload = () => resolve(String(r.result));
-      r.onerror = reject;
-      r.readAsDataURL(file);
-    });
+// Real Cloudinary uploader. Uploads to the selected account on file pick,
+// and deletes the asset from Cloudinary when the user removes a preview.
+function CloudUploader({
+  value,
+  onChange,
+  account,
+  folder,
+  max = 4,
+}: {
+  value: MediaAsset[];
+  onChange: (assets: MediaAsset[]) => void;
+  account: CloudinaryAccount;
+  folder?: string;
+  max?: number;
+}) {
+  const [busy, setBusy] = useState(false);
 
   const pick = async (files: FileList | null) => {
     if (!files) return;
     const remaining = max - value.length;
     if (remaining <= 0) { toast.error(`Max ${max} images`); return; }
-    const chosen = Array.from(files).slice(0, remaining);
-    const urls: string[] = [];
-    for (const f of chosen) {
-      if (!f.type.startsWith("image/")) { toast.error(`${f.name}: not an image`); continue; }
-      if (f.size > 2 * 1024 * 1024) { toast.error(`${f.name}: over 2MB`); continue; }
-      urls.push(await readAsDataURL(f));
+    const chosen = Array.from(files).slice(0, remaining).filter((f) => {
+      if (!f.type.startsWith("image/")) { toast.error(`${f.name}: not an image`); return false; }
+      if (f.size > 2 * 1024 * 1024) { toast.error(`${f.name}: over 2MB`); return false; }
+      return true;
+    });
+    if (!chosen.length) return;
+    setBusy(true);
+    try {
+      const uploader = account === "services" ? uploadsService.uploadServiceImage : uploadsService.uploadJobImage;
+      const results: MediaAsset[] = [];
+      for (const f of chosen) {
+        const r = await uploader(f, folder);
+        results.push({ url: r.url, publicId: r.publicId, account: r.account });
+      }
+      onChange([...value, ...results]);
+    } catch (err) {
+      console.error(err);
+      toast.error("Image upload failed");
+    } finally {
+      setBusy(false);
     }
-    if (urls.length) onChange([...value, ...urls]);
+  };
+
+  const remove = async (idx: number) => {
+    const asset = value[idx];
+    onChange(value.filter((_, j) => j !== idx));
+    if (asset?.publicId) {
+      const res = await uploadsService.deleteAsset(asset.publicId, asset.account);
+      if (!res.ok) toast.warning("Image removed from post but Cloudinary cleanup failed");
+    }
   };
 
   return (
     <div>
-      <label className="flex cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed border-border p-6 text-center hover:border-[var(--brand-orange)]/60">
-        <ImagePlus className="h-6 w-6 text-muted-foreground" />
-        <span className="text-sm font-medium">Upload image{max > 1 ? "s" : ""}</span>
+      <label className={`flex cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed border-border p-6 text-center hover:border-[var(--brand-orange)]/60 ${busy ? "opacity-60 pointer-events-none" : ""}`}>
+        {busy ? <Loader2 className="h-6 w-6 animate-spin text-[var(--brand-green)]" /> : <ImagePlus className="h-6 w-6 text-muted-foreground" />}
+        <span className="text-sm font-medium">{busy ? "Uploading…" : `Upload image${max > 1 ? "s" : ""}`}</span>
         <span className="text-xs text-muted-foreground">Up to {max} · JPG/PNG/WEBP · max 2MB each</span>
-        <input type="file" multiple={max > 1} accept="image/*" className="hidden" onChange={(e) => pick(e.target.files)} />
+        <input type="file" multiple={max > 1} accept="image/*" className="hidden" disabled={busy} onChange={(e) => { pick(e.target.files); e.target.value = ""; }} />
       </label>
       {value.length > 0 && (
         <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
-          {value.map((url, i) => (
-            <div key={i} className="group relative aspect-square overflow-hidden rounded-lg border border-border bg-muted">
-              <img src={url} alt="" className="h-full w-full object-cover" />
-              <button type="button" onClick={() => onChange(value.filter((_, j) => j !== i))}
+          {value.map((asset, i) => (
+            <div key={asset.publicId + i} className="group relative aspect-square overflow-hidden rounded-lg border border-border bg-muted">
+              <img src={asset.url} alt="" className="h-full w-full object-cover" />
+              <button type="button" onClick={() => remove(i)}
                 className="absolute right-1 top-1 rounded-full bg-black/70 p-1 text-white opacity-0 group-hover:opacity-100" aria-label="Remove">
                 <X className="h-3 w-3" />
               </button>

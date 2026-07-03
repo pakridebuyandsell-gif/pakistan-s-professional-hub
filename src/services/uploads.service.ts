@@ -1,21 +1,19 @@
-import { signCloudinaryUpload } from "@/lib/cloudinary-sign.functions";
+import { signCloudinaryUpload, deleteCloudinaryAsset } from "@/lib/cloudinary-sign.functions";
+
+export type CloudinaryAccount = "jobs" | "services";
 
 export interface UploadedImage {
   url: string;
-  publicId?: string;
+  publicId: string;
   width?: number;
   height?: number;
   format?: string;
   bytes?: number;
+  account: CloudinaryAccount;
 }
 
-/**
- * Uploads an image directly to Cloudinary using a signed upload.
- * The signature is minted server-side so the API secret never leaves the server.
- */
-async function uploadToCloudinary(file: File, folder = "worqgo"): Promise<UploadedImage> {
-  const sig = await signCloudinaryUpload({ data: { folder } });
-
+async function uploadOne(file: File, account: CloudinaryAccount, folder: string): Promise<UploadedImage> {
+  const sig = await signCloudinaryUpload({ data: { folder, account } });
   const fd = new FormData();
   fd.append("file", file);
   fd.append("api_key", sig.apiKey);
@@ -27,18 +25,13 @@ async function uploadToCloudinary(file: File, folder = "worqgo"): Promise<Upload
     method: "POST",
     body: fd,
   });
-
   if (!res.ok) {
     const text = await res.text().catch(() => "");
     throw new Error(`Cloudinary upload failed: ${res.status} ${text}`);
   }
   const json = (await res.json()) as {
-    secure_url: string;
-    public_id: string;
-    width: number;
-    height: number;
-    format: string;
-    bytes: number;
+    secure_url: string; public_id: string;
+    width: number; height: number; format: string; bytes: number;
   };
   return {
     url: json.secure_url,
@@ -47,14 +40,47 @@ async function uploadToCloudinary(file: File, folder = "worqgo"): Promise<Upload
     height: json.height,
     format: json.format,
     bytes: json.bytes,
+    account,
   };
 }
 
 export const uploadsService = {
-  uploadImage(file: File, folder = "worqgo"): Promise<UploadedImage> {
-    return uploadToCloudinary(file, folder);
+  /** Upload to the JOBS Cloudinary account (default folder `worqgo/jobs`). */
+  uploadJobImage(file: File, folder = "worqgo/jobs") {
+    return uploadOne(file, "jobs", folder);
   },
-  uploadMany(files: File[], folder = "worqgo"): Promise<UploadedImage[]> {
-    return Promise.all(files.map((f) => uploadToCloudinary(f, folder)));
+  uploadJobImages(files: File[], folder = "worqgo/jobs") {
+    return Promise.all(files.map((f) => uploadOne(f, "jobs", folder)));
+  },
+
+  /** Upload to the SERVICES Cloudinary account (default folder `worqgo/services`). */
+  uploadServiceImage(file: File, folder = "worqgo/services") {
+    return uploadOne(file, "services", folder);
+  },
+  uploadServiceImages(files: File[], folder = "worqgo/services") {
+    return Promise.all(files.map((f) => uploadOne(f, "services", folder)));
+  },
+
+  /** Legacy alias — routes to the jobs account by default. */
+  uploadImage(file: File, folder = "worqgo/jobs") {
+    return uploadOne(file, "jobs", folder);
+  },
+  uploadMany(files: File[], folder = "worqgo/jobs") {
+    return Promise.all(files.map((f) => uploadOne(f, "jobs", folder)));
+  },
+
+  /** Delete a single asset from Cloudinary. Never throws — logs and continues. */
+  async deleteAsset(publicId: string, account: CloudinaryAccount) {
+    try {
+      return await deleteCloudinaryAsset({ data: { publicId, account } });
+    } catch (err) {
+      console.warn("Cloudinary delete failed", publicId, err);
+      return { ok: false, result: "error" };
+    }
+  },
+
+  /** Delete many assets in parallel. Safe to call with mixed accounts. */
+  async deleteAssets(items: Array<{ publicId: string; account: CloudinaryAccount }>) {
+    return Promise.all(items.map((i) => this.deleteAsset(i.publicId, i.account)));
   },
 };
