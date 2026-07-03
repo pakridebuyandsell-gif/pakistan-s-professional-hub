@@ -1,5 +1,12 @@
 export type AccountType = "employer" | "job_seeker" | "service_provider" | "customer";
 
+/** Cloudinary asset reference kept on posted jobs/services so we can delete them later. */
+export interface MediaAsset {
+  url: string;
+  publicId: string;
+  account: "jobs" | "services";
+}
+
 export interface UserProfile {
   id: string;
   fullName: string;
