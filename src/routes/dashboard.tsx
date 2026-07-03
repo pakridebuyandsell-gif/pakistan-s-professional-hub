@@ -546,11 +546,13 @@ function ServiceEditor({ uid, initial, onSaved }: { uid: string; initial: Servic
     description: "",
     tags: [],
   });
-  const [avatars, setAvatars] = useState<string[]>(initial?.avatarUrl ? [initial.avatarUrl] : []);
+  const [avatarAssets, setAvatarAssets] = useState<MediaAsset[]>(
+    initial?.mediaAssets?.length ? initial.mediaAssets : (initial?.avatarUrl ? [{ url: initial.avatarUrl, publicId: "", account: "services" }] : [])
+  );
 
   const save = (e: React.FormEvent) => {
     e.preventDefault();
-    saveMyService(uid, { ...s, avatarUrl: avatars[0] });
+    saveMyService(uid, { ...s, avatarUrl: avatarAssets[0]?.url, mediaAssets: avatarAssets });
     toast.success(initial ? "Service updated" : "Service posted");
     onSaved();
   };
@@ -588,7 +590,7 @@ function ServiceEditor({ uid, initial, onSaved }: { uid: string; initial: Servic
       </Field>
 
       <Field label="Profile Photo (1 image)">
-        <UrlUploader max={1} value={avatars} onChange={setAvatars} />
+        <CloudUploader account="services" folder="worqgo/services" max={1} value={avatarAssets} onChange={setAvatarAssets} />
       </Field>
 
       <style>{globalInputCss}</style>
