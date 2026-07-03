@@ -14,9 +14,10 @@ import {
   type LocalProfile,
 } from "@/lib/local-store";
 import { PK_CITIES, JOB_CATEGORIES, SERVICE_CATEGORIES } from "@/services/mock";
-import type { Job, ServiceProvider } from "@/services/types";
+import type { Job, ServiceProvider, MediaAsset } from "@/services/types";
+import { uploadsService, type CloudinaryAccount } from "@/services/uploads.service";
 import { toast } from "sonner";
-import { ImagePlus, X } from "lucide-react";
+import { ImagePlus, X, Loader2 } from "lucide-react";
 
 export const Route = createFileRoute("/dashboard")({
   head: () => ({
