@@ -3,19 +3,46 @@ import { createHash } from "crypto";
 
 type Account = "jobs" | "services";
 
-function creds(account: Account) {
-  if (account === "services") {
+function fromCloudinaryUrl(raw: string | undefined) {
+  if (!raw) return null;
+  try {
+    const parsed = new URL(raw);
+    if (parsed.protocol !== "cloudinary:") return null;
     return {
-      cloudName: process.env.CLOUDINARY_SERVICES_CLOUD_NAME!,
-      apiKey: process.env.CLOUDINARY_SERVICES_API_KEY!,
-      apiSecret: process.env.CLOUDINARY_SERVICES_API_SECRET!,
+      cloudName: parsed.hostname,
+      apiKey: decodeURIComponent(parsed.username),
+      apiSecret: decodeURIComponent(parsed.password),
     };
+  } catch {
+    return null;
   }
-  return {
-    cloudName: process.env.CLOUDINARY_CLOUD_NAME!,
-    apiKey: process.env.CLOUDINARY_API_KEY!,
-    apiSecret: process.env.CLOUDINARY_API_SECRET!,
-  };
+}
+
+function requireCreds(values: { cloudName?: string; apiKey?: string; apiSecret?: string }, account: Account) {
+  const cloudName = values.cloudName?.trim();
+  const apiKey = values.apiKey?.trim();
+  const apiSecret = values.apiSecret?.trim();
+  if (!cloudName || !apiKey || !apiSecret) {
+    throw new Error(`Cloudinary ${account} credentials are missing`);
+  }
+  return { cloudName, apiKey, apiSecret };
+}
+
+function creds(account: Account) {
+  const singleUrl = fromCloudinaryUrl(process.env.CLOUDINARY_URL);
+  if (account === "services") {
+    const servicesUrl = fromCloudinaryUrl(process.env.CLOUDINARY_SERVICES_URL);
+    return requireCreds({
+      cloudName: process.env.CLOUDINARY_SERVICES_CLOUD_NAME ?? servicesUrl?.cloudName ?? singleUrl?.cloudName,
+      apiKey: process.env.CLOUDINARY_SERVICES_API_KEY ?? process.env.SERVICES_API_KEY ?? servicesUrl?.apiKey ?? singleUrl?.apiKey,
+      apiSecret: process.env.CLOUDINARY_SERVICES_API_SECRET ?? process.env.SERVICES_API_SECRET ?? servicesUrl?.apiSecret ?? singleUrl?.apiSecret,
+    }, account);
+  }
+  return requireCreds({
+    cloudName: process.env.CLOUDINARY_CLOUD_NAME ?? singleUrl?.cloudName,
+    apiKey: process.env.CLOUDINARY_API_KEY ?? process.env.API_KEY ?? singleUrl?.apiKey,
+    apiSecret: process.env.CLOUDINARY_API_SECRET ?? process.env.API_SECRET ?? singleUrl?.apiSecret,
+  }, account);
 }
 
 /** Sign an upload from the browser. API secret never leaves the server. */

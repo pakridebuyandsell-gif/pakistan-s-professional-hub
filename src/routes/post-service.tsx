@@ -85,10 +85,19 @@ function PostServicePage() {
     }
     setBusy(true);
     try {
-      // Upload to the Services Cloudinary account so we can later delete by publicId
-      const uploaded = images.length ? await uploadsService.uploadServiceImages(images) : [];
+      let uploaded: Awaited<ReturnType<typeof uploadsService.uploadServiceImages>> = [];
+      if (images.length) {
+        try {
+          uploaded = await uploadsService.uploadServiceImages(images);
+        } catch (uploadErr) {
+          console.warn("Cloudinary upload failed; posting service without images", uploadErr);
+          toast.warning("Image upload failed, service will be saved without images.");
+        }
+      }
       const mediaAssets = uploaded.map((u) => ({ url: u.url, publicId: u.publicId, account: "services" as const }));
       const payload: Record<string, unknown> = {
+        ownerUid: user.uid,
+        ownerEmail: user.email ?? "",
         name: form.title, category: form.category, city: form.city,
         description: form.detailedDesc,
         tags: form.tags.split(",").map((t) => t.trim()).filter(Boolean),
@@ -104,35 +113,14 @@ function PostServicePage() {
         hoursTo: form.to,
         travelToCustomer: form.travelToCustomer,
       };
-      try {
-        await providersService.create(payload as never);
-      } catch {
-        // Backend unreachable — persist locally so the user's post is never lost
-        const { saveMyService, newId } = await import("@/lib/local-store");
-        saveMyService(user.uid, {
-          id: newId(),
-          name: form.title,
-          avatarUrl: uploaded[0]?.url,
-          category: form.category,
-          city: form.city,
-          rating: 0,
-          reviews: 0,
-          yearsExperience: 0,
-          level: "Bronze",
-          hourlyRate: Number(form.rate) || undefined,
-          currency: "PKR",
-          verified: false,
-          description: form.detailedDesc,
-          tags: form.tags.split(",").map((t) => t.trim()).filter(Boolean),
-          mediaAssets,
-        });
-        toast.info("Saved to your dashboard (offline mode)");
-      }
+      const created = await providersService.create(payload as never);
+      const { saveMyService } = await import("@/lib/local-store");
+      saveMyService(user.uid, created);
       toast.success("Service posted successfully");
       navigate({ to: "/dashboard" });
     } catch (err) {
       console.error(err);
-      toast.error("Could not post service. Please try again.");
+      toast.error("Service save nahi ho saki. Firebase/Cloudinary settings check karein aur dobara try karein.");
     } finally {
       setBusy(false);
     }

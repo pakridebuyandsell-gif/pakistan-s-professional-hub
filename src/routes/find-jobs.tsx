@@ -120,7 +120,7 @@ function FindJobsPage() {
 
           {query.isError && (
             <div className="card-elevated p-6 text-center text-sm text-muted-foreground">
-              Couldn't reach the jobs API. Please try again shortly.
+              Firebase se jobs load nahi ho sakin. Local saved jobs available hon to yahan show hongi.
             </div>
           )}
 
