@@ -37,6 +37,7 @@ export interface Job {
   tags?: string[];
   isNew?: boolean;
   verified?: boolean;
+  mediaAssets?: MediaAsset[];
 }
 
 export interface ServiceProvider {
@@ -58,4 +59,5 @@ export interface ServiceProvider {
   completedProjects?: number;
   positiveReviewsPct?: number;
   happyCustomers?: number;
+  mediaAssets?: MediaAsset[];
 }
