@@ -185,7 +185,15 @@ function ProviderDashboard({ uid, email, displayName, onLogout }: { uid: string;
           <MyServices
             services={services}
             onEdit={(s) => { setEditingService(s); setTab("post"); }}
-            onDelete={(id) => { deleteMyService(uid, id); refreshServices(); toast.success("Service deleted"); }}
+            onDelete={async (id) => {
+              const svc = services.find((s) => s.id === id);
+              if (svc?.mediaAssets?.length) {
+                await uploadsService.deleteAssets(svc.mediaAssets.map((m) => ({ publicId: m.publicId, account: m.account })));
+              }
+              deleteMyService(uid, id);
+              refreshServices();
+              toast.success("Service deleted (media removed from Cloudinary)");
+            }}
             onNew={() => { setEditingService(null); setTab("post"); }}
           />
         )}
