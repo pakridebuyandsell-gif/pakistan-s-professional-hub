@@ -134,6 +134,7 @@ function PostServicePage() {
         currency: "PKR",
         rating: 0,
         reviews: 0,
+        yearsExperience: 0,
         level: "Bronze",
         verified: false,
         shortDescription: form.shortDesc,
