@@ -16,6 +16,8 @@ import {
 import { PK_CITIES, JOB_CATEGORIES, SERVICE_CATEGORIES } from "@/services/mock";
 import type { Job, ServiceProvider, MediaAsset } from "@/services/types";
 import { uploadsService, type CloudinaryAccount } from "@/services/uploads.service";
+import { jobsService } from "@/services/jobs.service";
+import { providersService } from "@/services/providers.service";
 import { toast } from "sonner";
 import { ImagePlus, X, Loader2 } from "lucide-react";
 
@@ -445,15 +447,17 @@ function JobEditor({ uid, initial, onSaved }: { uid: string; initial: Job | null
     initial?.mediaAssets?.length ? initial.mediaAssets : (initial?.companyLogo ? [{ url: initial.companyLogo, publicId: "", account: "jobs" }] : [])
   );
 
-  const save = (e: React.FormEvent) => {
+  const save = async (e: React.FormEvent) => {
     e.preventDefault();
     const merged: Job = {
       ...job,
+      ownerUid: uid,
       companyLogo: logoAssets[0]?.url,
       mediaAssets: logoAssets,
       postedAt: initial?.postedAt ?? new Date().toISOString(),
     };
-    saveMyJob(uid, merged);
+    const saved = initial ? await jobsService.update(merged.id, merged) : await jobsService.create(merged);
+    saveMyJob(uid, saved);
     toast.success(initial ? "Job updated" : "Job posted");
     onSaved();
   };
@@ -550,9 +554,11 @@ function ServiceEditor({ uid, initial, onSaved }: { uid: string; initial: Servic
     initial?.mediaAssets?.length ? initial.mediaAssets : (initial?.avatarUrl ? [{ url: initial.avatarUrl, publicId: "", account: "services" }] : [])
   );
 
-  const save = (e: React.FormEvent) => {
+  const save = async (e: React.FormEvent) => {
     e.preventDefault();
-    saveMyService(uid, { ...s, avatarUrl: avatarAssets[0]?.url, mediaAssets: avatarAssets });
+    const merged = { ...s, ownerUid: uid, avatarUrl: avatarAssets[0]?.url, mediaAssets: avatarAssets };
+    const saved = initial ? await providersService.update(merged.id, merged) : await providersService.create(merged);
+    saveMyService(uid, saved);
     toast.success(initial ? "Service updated" : "Service posted");
     onSaved();
   };

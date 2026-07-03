@@ -37,6 +37,7 @@ function localList(filters?: ProviderFilters) {
 }
 
 async function firestoreList(filters?: ProviderFilters) {
+  if (typeof window === "undefined") return localList(filters);
   const db = await getFirebaseDb();
   if (!db) return localList(filters);
   try {
@@ -53,6 +54,7 @@ async function firestoreList(filters?: ProviderFilters) {
 export const providersService = {
   list: firestoreList,
   async get(id: string) {
+    if (typeof window === "undefined") throw new Error("Service not found");
     const db = await getFirebaseDb();
     if (db) {
       try {
@@ -104,7 +106,9 @@ export const providersService = {
     if (db) {
       try { await deleteDoc(doc(db, "services", id)); } catch (err) { console.warn("Firebase service delete failed; deleting local copy", err); }
     }
-    localStorage.setItem("worqgo:public_services", JSON.stringify(getAllLocalServices().filter((provider) => provider.id !== id)));
+    if (typeof window !== "undefined") {
+      localStorage.setItem("worqgo:public_services", JSON.stringify(getAllLocalServices().filter((provider) => provider.id !== id)));
+    }
     return { ok: true as const };
   },
 };

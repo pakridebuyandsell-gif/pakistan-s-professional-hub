@@ -37,6 +37,7 @@ function localList(filters?: JobFilters) {
 }
 
 async function firestoreList(filters?: JobFilters) {
+  if (typeof window === "undefined") return localList(filters);
   const db = await getFirebaseDb();
   if (!db) return localList(filters);
   try {
@@ -53,6 +54,7 @@ async function firestoreList(filters?: JobFilters) {
 export const jobsService = {
   list: firestoreList,
   async get(id: string) {
+    if (typeof window === "undefined") throw new Error("Job not found");
     const db = await getFirebaseDb();
     if (db) {
       try {
@@ -102,7 +104,9 @@ export const jobsService = {
     if (db) {
       try { await deleteDoc(doc(db, "jobs", id)); } catch (err) { console.warn("Firebase job delete failed; deleting local copy", err); }
     }
-    localStorage.setItem("worqgo:public_jobs", JSON.stringify(getAllLocalJobs().filter((job) => job.id !== id)));
+    if (typeof window !== "undefined") {
+      localStorage.setItem("worqgo:public_jobs", JSON.stringify(getAllLocalJobs().filter((job) => job.id !== id)));
+    }
     return { ok: true as const };
   },
   async apply(_id: string, _data: { message?: string; resumeUrl?: string }) {
