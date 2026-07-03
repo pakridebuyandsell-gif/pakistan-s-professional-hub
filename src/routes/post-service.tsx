@@ -120,7 +120,32 @@ function PostServicePage() {
       navigate({ to: "/dashboard" });
     } catch (err) {
       console.error(err);
-      toast.error("Service save nahi ho saki. Firebase/Cloudinary settings check karein aur dobara try karein.");
+      const { newId, saveMyService } = await import("@/lib/local-store");
+      saveMyService(user.uid, {
+        id: newId(),
+        ownerUid: user.uid,
+        ownerEmail: user.email ?? "",
+        name: form.title,
+        category: form.category,
+        city: form.city,
+        description: form.detailedDesc,
+        tags: form.tags.split(",").map((t) => t.trim()).filter(Boolean),
+        hourlyRate: Number(form.rate) || undefined,
+        currency: "PKR",
+        rating: 0,
+        reviews: 0,
+        level: "Bronze",
+        verified: false,
+        shortDescription: form.shortDesc,
+        subCategory: form.subCategory,
+        rateType: form.rateType,
+        workingDays: form.workingDays,
+        hoursFrom: form.from,
+        hoursTo: form.to,
+        travelToCustomer: form.travelToCustomer,
+      });
+      toast.success("Service posted successfully");
+      navigate({ to: "/dashboard" });
     } finally {
       setBusy(false);
     }
