@@ -492,7 +492,7 @@ function JobEditor({ uid, initial, onSaved }: { uid: string; initial: Job | null
       </div>
 
       <Field label="Company Logo (1 image)">
-        <UrlUploader max={1} value={logoUrls} onChange={setLogoUrls} />
+        <CloudUploader account="jobs" folder="worqgo/jobs" max={1} value={logoAssets} onChange={setLogoAssets} />
       </Field>
 
       <style>{globalInputCss}</style>
