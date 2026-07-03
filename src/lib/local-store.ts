@@ -1,6 +1,6 @@
 /**
- * Local persistence layer used as a working store while the backend
- * (VITE_API_URL) is only partially available. Keys are namespaced under
+ * Local persistence layer used as a browser fallback beside Firebase.
+ * Keys are namespaced under
  * `worqgo:` and are per-user (bound to the Firebase UID).
  *
  * The store handles: user profile, role-per-email binding, and CRUD
@@ -12,6 +12,8 @@ const ROLE_MAP_KEY = "worqgo:role_by_email";
 const PROFILE_PREFIX = "worqgo:profile:";
 const JOBS_PREFIX = "worqgo:jobs:";
 const SERVICES_PREFIX = "worqgo:services:";
+const PUBLIC_JOBS_KEY = "worqgo:public_jobs";
+const PUBLIC_SERVICES_KEY = "worqgo:public_services";
 
 function safeParse<T>(raw: string | null, fallback: T): T {
   if (!raw) return fallback;
@@ -103,13 +105,28 @@ export function saveMyJob(uid: string, job: Job) {
   const idx = list.findIndex((j) => j.id === job.id);
   if (idx >= 0) list[idx] = job; else list.unshift(job);
   localStorage.setItem(JOBS_PREFIX + uid, JSON.stringify(list));
+  upsertPublicJob(job);
   return list;
 }
 
 export function deleteMyJob(uid: string, id: string) {
   const list = getMyJobs(uid).filter((j) => j.id !== id);
   localStorage.setItem(JOBS_PREFIX + uid, JSON.stringify(list));
+  localStorage.setItem(PUBLIC_JOBS_KEY, JSON.stringify(getAllLocalJobs().filter((j) => j.id !== id)));
   return list;
+}
+
+export function getAllLocalJobs(): Job[] {
+  if (typeof window === "undefined") return [];
+  return safeParse<Job[]>(localStorage.getItem(PUBLIC_JOBS_KEY), []);
+}
+
+export function upsertPublicJob(job: Job) {
+  if (typeof window === "undefined") return;
+  const list = getAllLocalJobs();
+  const idx = list.findIndex((j) => j.id === job.id);
+  if (idx >= 0) list[idx] = job; else list.unshift(job);
+  localStorage.setItem(PUBLIC_JOBS_KEY, JSON.stringify(list));
 }
 
 // ---------- Services owned by the current provider ----------
@@ -124,13 +141,28 @@ export function saveMyService(uid: string, svc: ServiceProvider) {
   const idx = list.findIndex((s) => s.id === svc.id);
   if (idx >= 0) list[idx] = svc; else list.unshift(svc);
   localStorage.setItem(SERVICES_PREFIX + uid, JSON.stringify(list));
+  upsertPublicService(svc);
   return list;
 }
 
 export function deleteMyService(uid: string, id: string) {
   const list = getMyServices(uid).filter((s) => s.id !== id);
   localStorage.setItem(SERVICES_PREFIX + uid, JSON.stringify(list));
+  localStorage.setItem(PUBLIC_SERVICES_KEY, JSON.stringify(getAllLocalServices().filter((s) => s.id !== id)));
   return list;
+}
+
+export function getAllLocalServices(): ServiceProvider[] {
+  if (typeof window === "undefined") return [];
+  return safeParse<ServiceProvider[]>(localStorage.getItem(PUBLIC_SERVICES_KEY), []);
+}
+
+export function upsertPublicService(svc: ServiceProvider) {
+  if (typeof window === "undefined") return;
+  const list = getAllLocalServices();
+  const idx = list.findIndex((s) => s.id === svc.id);
+  if (idx >= 0) list[idx] = svc; else list.unshift(svc);
+  localStorage.setItem(PUBLIC_SERVICES_KEY, JSON.stringify(list));
 }
 
 export function newId() {

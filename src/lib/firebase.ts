@@ -1,5 +1,6 @@
 import { initializeApp, getApps, type FirebaseApp, type FirebaseOptions } from "firebase/app";
 import { getAuth, GoogleAuthProvider, type Auth } from "firebase/auth";
+import { getFirestore, type Firestore } from "firebase/firestore";
 
 // Firebase publishable config — safe to expose in client code.
 const firebaseConfig = {
@@ -14,6 +15,7 @@ const firebaseConfig = {
 
 let _app: FirebaseApp | null = null;
 let _auth: Auth | null = null;
+let _db: Firestore | null = null;
 let _configPromise: Promise<FirebaseOptions | null> | null = null;
 
 function cleanApiKey(value: unknown) {
@@ -55,6 +57,14 @@ export async function getFirebaseAuth(): Promise<Auth | null> {
   if (!app) return null;
   _auth = getAuth(app);
   return _auth;
+}
+
+export async function getFirebaseDb(): Promise<Firestore | null> {
+  if (_db) return _db;
+  const app = await getFirebaseApp();
+  if (!app) return null;
+  _db = getFirestore(app);
+  return _db;
 }
 
 export async function requireFirebaseAuth(): Promise<Auth> {

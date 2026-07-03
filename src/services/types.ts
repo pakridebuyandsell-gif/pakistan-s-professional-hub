@@ -38,6 +38,15 @@ export interface Job {
   isNew?: boolean;
   verified?: boolean;
   mediaAssets?: MediaAsset[];
+  ownerUid?: string;
+  ownerEmail?: string;
+  description?: string;
+  requirements?: string;
+  experience?: string;
+  education?: string;
+  benefits?: string;
+  vacancies?: number;
+  deadline?: string;
 }
 
 export interface ServiceProvider {
@@ -60,4 +69,15 @@ export interface ServiceProvider {
   positiveReviewsPct?: number;
   happyCustomers?: number;
   mediaAssets?: MediaAsset[];
+  ownerUid?: string;
+  ownerEmail?: string;
+  phone?: string;
+  whatsapp?: string;
+  shortDescription?: string;
+  subCategory?: string;
+  rateType?: string;
+  workingDays?: string;
+  hoursFrom?: string;
+  hoursTo?: string;
+  travelToCustomer?: boolean;
 }

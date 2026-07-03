@@ -1,7 +1,6 @@
 /**
  * Reference constants (cities & categories) used across the app.
- * Demo job/provider seed data has been removed — the UI now shows only
- * data returned by the real API (VITE_API_URL).
+ * Public marketplace data now comes from Firebase, with local browser fallback.
  */
 import type { Job, ServiceProvider } from "./types";
 

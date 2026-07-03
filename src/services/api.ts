@@ -1,10 +1,10 @@
 /**
- * Central REST API client. Backend base URL from VITE_API_URL.
- * All feature services (jobs, services, profile...) go through this.
+ * Legacy REST helper kept for future external integrations.
+ * The marketplace itself uses Firebase + Cloudinary now.
  */
 import { getFirebaseAuth } from "@/lib/firebase";
 
-const BASE_URL = import.meta.env.VITE_API_URL ?? "https://api.worqgo.com";
+const BASE_URL = import.meta.env.VITE_API_URL ?? "";
 
 export class ApiError extends Error {
   constructor(public status: number, message: string, public payload?: unknown) {
