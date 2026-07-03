@@ -632,18 +632,25 @@ function MyServices({ services, onEdit, onDelete, onNew }: { services: ServicePr
 
 function PortfolioEditor({ uid }: { uid: string }) {
   const key = `worqgo:portfolio:${uid}`;
-  const [urls, setUrls] = useState<string[]>(() => {
-    try { return JSON.parse(localStorage.getItem(key) ?? "[]"); } catch { return []; }
+  // Migrate legacy string[] URLs (data: or http) to MediaAsset[]
+  const [assets, setAssets] = useState<MediaAsset[]>(() => {
+    try {
+      const raw = JSON.parse(localStorage.getItem(key) ?? "[]");
+      if (Array.isArray(raw) && raw.length && typeof raw[0] === "string") {
+        return (raw as string[]).map((url) => ({ url, publicId: "", account: "services" as const }));
+      }
+      return raw as MediaAsset[];
+    } catch { return []; }
   });
-  const save = (next: string[]) => {
-    setUrls(next);
+  const save = (next: MediaAsset[]) => {
+    setAssets(next);
     localStorage.setItem(key, JSON.stringify(next));
   };
   return (
     <div className="card-elevated p-6 space-y-3">
       <h2 className="text-xl font-bold">Portfolio (max 4 photos)</h2>
       <p className="text-sm text-muted-foreground">Apne kaam ki photos add karein — yeh customers ko dikhengi.</p>
-      <UrlUploader max={4} value={urls} onChange={save} />
+      <CloudUploader account="services" folder="worqgo/portfolio" max={4} value={assets} onChange={save} />
     </div>
   );
 }
